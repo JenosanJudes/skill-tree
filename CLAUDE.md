@@ -24,6 +24,7 @@ src/
                validateTree.ts      validering, bruges ved indlæsning og import
                storage.ts           gem/indlæs i localStorage
                TreeContext.tsx      useReducer + Context (fra trin 3)
+               testTree.ts          lille fast træ til tests (ikke skabelonen)
   components/  React-komponenter (fra trin 3)
 docs/spec.md   specifikation og faseplan
 ```
@@ -35,6 +36,7 @@ docs/spec.md   specifikation og faseplan
 - Reducer og hjælpefunktioner er rene: ingen sideeffekter, data ændres aldrig på stedet, der returneres altid et nyt objekt.
 - Regler fra specen: stamme og hovedgrene har intet `level`; kun hovedgrene har `color`, og undergrene arver den; stammen kan ikke slettes.
 - Kode og identifiers på engelsk. Kommentarer, testnavne, UI-tekster og commit-beskeder på dansk.
+- Tests bruger `makeTestTree()` og ikke startskabelonen, så de ikke afhænger af skabelonens indhold.
 - Tests ligger ved siden af filen: `treeReducer.ts` → `treeReducer.test.ts`. Importer `describe`, `it` og `expect` fra `vitest`.
 
 ## Arbejdsgang
