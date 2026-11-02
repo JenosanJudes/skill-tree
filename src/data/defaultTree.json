@@ -1,0 +1,127 @@
+{
+  "formatVersion": 1,
+  "root": {
+    "id": "root",
+    "name": "Mine færdigheder",
+    "children": [
+      {
+        "id": "ai",
+        "name": "AI",
+        "color": "#b388ff",
+        "children": [
+          {
+            "id": "ai-prompting",
+            "name": "Prompting",
+            "description": "At skrive klare instruktioner til sprogmodeller.",
+            "level": 2,
+            "children": []
+          },
+          {
+            "id": "ai-claude-code",
+            "name": "Claude Code",
+            "description": "Agentisk kodning i terminalen.",
+            "level": 1,
+            "children": []
+          },
+          {
+            "id": "ai-machine-learning",
+            "name": "Maskinlæring",
+            "description": "Grundbegreber som træning, data og evaluering.",
+            "level": 0,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "se",
+        "name": "Softwareingeniør",
+        "color": "#4fc3f7",
+        "children": [
+          {
+            "id": "se-design",
+            "name": "Softwaredesign",
+            "description": "At strukturere kode, så den er let at ændre.",
+            "level": 2,
+            "children": [
+              {
+                "id": "se-design-patterns",
+                "name": "Designmønstre",
+                "level": 2,
+                "children": []
+              },
+              {
+                "id": "se-design-ooad",
+                "name": "Objektorienteret analyse og design",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "se-testing",
+            "name": "Test",
+            "description": "Unit tests og testdrevet udvikling.",
+            "level": 1,
+            "children": []
+          },
+          {
+            "id": "se-agile",
+            "name": "Agile og Scrum",
+            "level": 3,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "lang",
+        "name": "Kodesprog",
+        "color": "#69f0ae",
+        "children": [
+          {
+            "id": "lang-java",
+            "name": "Java",
+            "level": 4,
+            "children": []
+          },
+          {
+            "id": "lang-csharp",
+            "name": "C#",
+            "level": 3,
+            "children": []
+          },
+          {
+            "id": "lang-typescript",
+            "name": "TypeScript",
+            "level": 1,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "tools",
+        "name": "Programmer",
+        "color": "#ffab40",
+        "children": [
+          {
+            "id": "tools-git",
+            "name": "Git og GitHub",
+            "level": 3,
+            "children": []
+          },
+          {
+            "id": "tools-intellij",
+            "name": "IntelliJ IDEA",
+            "level": 5,
+            "children": []
+          },
+          {
+            "id": "tools-vscode",
+            "name": "Visual Studio Code",
+            "level": 4,
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}
