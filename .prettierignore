@@ -1,0 +1,5 @@
+dist
+coverage
+package-lock.json
+# Markdown skrives i hånden og formateres ikke automatisk
+*.md
