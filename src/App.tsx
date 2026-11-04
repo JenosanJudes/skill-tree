@@ -1,9 +1,11 @@
+import { SkillTreeView } from './components/SkillTreeView'
+import { TreeProvider } from './store/TreeContext'
+
 function App() {
   return (
-    <main className="app">
-      <h1>Skill tree</h1>
-      <p>Træet kommer i trin 3.</p>
-    </main>
+    <TreeProvider>
+      <SkillTreeView />
+    </TreeProvider>
   )
 }
 

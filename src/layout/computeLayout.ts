@@ -1,5 +1,5 @@
 import { hierarchy, tree } from 'd3-hierarchy'
-import type { HierarchyNode } from 'd3-hierarchy'
+import type { HierarchyPointNode } from 'd3-hierarchy'
 import type { Level, SkillNode } from '../types/skillTree'
 
 /** Vandret afstand mellem noder på samme række (SVG-enheder). */
@@ -32,6 +32,8 @@ export type LayoutLink = {
   id: string
   /** SVG-sti med knæk: lodret, vandret, lodret. */
   path: string
+  /** Barnets farve, dvs. hovedgrenens. */
+  color?: string
 }
 
 export type Layout = {
@@ -55,11 +57,13 @@ export function elbowPath(source: Point, target: Point): string {
  */
 export function computeLayout(root: SkillNode): Layout {
   // d3 laver sin egen hierarki-kopi; vores data bliver ikke ændret.
-  const hier = hierarchy(root)
-  tree<SkillNode>().nodeSize([NODE_WIDTH, LEVEL_HEIGHT])(hier)
+  // tree() returnerer en node, hvor x og y er regnet ud (altid tal).
+  const positioned = tree<SkillNode>().nodeSize([NODE_WIDTH, LEVEL_HEIGHT])(
+    hierarchy(root),
+  )
 
-  const layoutOf = new Map<HierarchyNode<SkillNode>, LayoutNode>()
-  for (const node of hier.descendants()) {
+  const layoutOf = new Map<HierarchyPointNode<SkillNode>, LayoutNode>()
+  for (const node of positioned.descendants()) {
     // Farven kommer fra hovedgrenen (dybde 1) blandt nodens forfædre.
     const branch = node.ancestors().find((a) => a.depth === 1)
     layoutOf.set(node, {
@@ -77,10 +81,12 @@ export function computeLayout(root: SkillNode): Layout {
 
   const nodes = [...layoutOf.values()]
 
-  const links = hier.links().flatMap(({ source, target }) => {
+  const links = positioned.links().flatMap(({ source, target }) => {
     const from = layoutOf.get(source)
     const to = layoutOf.get(target)
-    return from && to ? [{ id: to.id, path: elbowPath(from, to) }] : []
+    return from && to
+      ? [{ id: to.id, path: elbowPath(from, to), color: to.color }]
+      : []
   })
 
   const xs = nodes.map((n) => n.x)

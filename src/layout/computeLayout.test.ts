@@ -78,6 +78,11 @@ describe('computeLayout', () => {
     )
   })
 
+  it('giver forbindelsen barnets farve', () => {
+    const link = layout.links.find((l) => l.id === 'leaf-a')
+    expect(link?.color).toBe('#ff0000')
+  })
+
   it('får viewBox til at rumme alle noder', () => {
     const { x, y, width, height } = layout.bounds
     for (const node of layout.nodes) {

@@ -3,10 +3,8 @@ import { render, screen } from '@testing-library/react'
 import App from './App'
 
 describe('App', () => {
-  it('viser overskriften', () => {
+  it('viser skill treet', () => {
     render(<App />)
-    expect(
-      screen.getByRole('heading', { name: 'Skill tree' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Skill tree' })).toBeInTheDocument()
   })
 })
