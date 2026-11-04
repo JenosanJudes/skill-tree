@@ -1,13 +1,25 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react'
+import { HOVER_DELAY_MS } from './useHoverCard'
 import { computeLayout } from '../layout/computeLayout'
 import { TreeProvider } from '../store/TreeContext'
 import { makeTestTree } from '../store/testTree'
 import { SkillTreeView } from './SkillTreeView'
 
-function renderTree(selectedId: string | null = null, onSelect = vi.fn()) {
+function renderTree(
+  selectedId: string | null = null,
+  onSelect = vi.fn(),
+  tree = makeTestTree(),
+) {
   return render(
-    <TreeProvider initialTree={makeTestTree()}>
+    <TreeProvider initialTree={tree}>
       <SkillTreeView selectedId={selectedId} onSelect={onSelect} />
     </TreeProvider>,
   )
@@ -15,6 +27,102 @@ function renderTree(selectedId: string | null = null, onSelect = vi.fn()) {
 
 describe('SkillTreeView', () => {
   afterEach(cleanup)
+
+  describe('hover-boks', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    function waitForCard() {
+      act(() => vi.advanceTimersByTime(HOVER_DELAY_MS))
+    }
+
+    it('vises først efter forsinkelsen og skjules, når musen går', () => {
+      vi.useFakeTimers()
+      renderTree()
+      const node = screen.getByRole('button', { name: 'Blad B' })
+
+      fireEvent.mouseEnter(node)
+      act(() => vi.advanceTimersByTime(HOVER_DELAY_MS - 1))
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+      act(() => vi.advanceTimersByTime(1))
+      expect(screen.getByRole('tooltip')).toHaveTextContent('Blad B')
+
+      fireEvent.mouseLeave(node)
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    })
+
+    it('vises ikke, hvis musen går, før tiden er gået', () => {
+      vi.useFakeTimers()
+      renderTree()
+      const node = screen.getByRole('button', { name: 'Blad B' })
+      fireEvent.mouseEnter(node)
+      fireEvent.mouseLeave(node)
+      waitForCard()
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    })
+
+    it('vises ved fokus med tastaturet og skjules ved blur', () => {
+      vi.useFakeTimers()
+      renderTree()
+      const node = screen.getByRole('button', { name: 'Dyb' })
+      fireEvent.focus(node)
+      waitForCard()
+      expect(screen.getByRole('tooltip')).toHaveTextContent('Dyb')
+      fireEvent.blur(node)
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    })
+
+    it('viser niveau, beskrivelse og noter', () => {
+      vi.useFakeTimers()
+      const tree = makeTestTree()
+      const leaf = tree.root.children[0].children[1] // Blad B, niveau 2
+      leaf.description = 'Kan det meste'
+      leaf.notes = 'Linje 1\nLinje 2'
+      renderTree(null, vi.fn(), tree)
+
+      fireEvent.mouseEnter(screen.getByRole('button', { name: 'Blad B' }))
+      waitForCard()
+
+      const card = screen.getByRole('tooltip')
+      expect(
+        within(card).getByRole('img', { name: 'Niveau 2 af 5' }),
+      ).toBeInTheDocument()
+      expect(card.querySelectorAll('.level-dot-small.filled')).toHaveLength(2)
+      expect(card).toHaveTextContent('Kan det meste')
+      expect(card).toHaveTextContent('Linje 1')
+    })
+
+    it('udelader tomme felter og cirkler på en hovedgren', () => {
+      vi.useFakeTimers()
+      renderTree()
+      fireEvent.mouseEnter(screen.getByRole('button', { name: 'Hovedgren' }))
+      waitForCard()
+
+      const card = screen.getByRole('tooltip')
+      expect(within(card).queryByRole('img')).not.toBeInTheDocument()
+      expect(card.querySelectorAll('p')).toHaveLength(1) // kun navnet
+    })
+
+    it('viser "Ikke låst op" for niveau 0', () => {
+      vi.useFakeTimers()
+      renderTree()
+      fireEvent.mouseEnter(screen.getByRole('button', { name: 'Dyb' }))
+      waitForCard()
+      expect(
+        screen.getByRole('img', { name: 'Ikke låst op' }),
+      ).toBeInTheDocument()
+    })
+
+    it('vises ikke for den valgte node', () => {
+      vi.useFakeTimers()
+      renderTree('leaf-a')
+      fireEvent.mouseEnter(screen.getByRole('button', { name: 'Blad A' }))
+      waitForCard()
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    })
+  })
 
   it('vælger en node ved klik', () => {
     const onSelect = vi.fn()

@@ -230,3 +230,71 @@ body {
   background: #7f1d1d;
   color: #fff;
 }
+
+/* Hover-boks: kun til læsning. Bredden skal passe med CARD_WIDTH
+   i hoverCardPosition.ts. */
+.hover-card {
+  position: absolute;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 260px;
+  max-height: 40vh;
+  overflow: hidden;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  background: rgb(17 24 39 / 0.95);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.5);
+  font-size: 0.85rem;
+  /* Boksen må aldrig fange musen; klik og træk går igennem til træet. */
+  pointer-events: none;
+}
+
+.hover-card.above {
+  transform: translate(-50%, -100%);
+}
+
+.hover-card.below {
+  transform: translate(-50%, 0);
+}
+
+.hover-card p {
+  margin: 0;
+}
+
+.hover-card-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.hover-card-description {
+  color: #d1d5db;
+}
+
+/* Noter beholder deres linjeskift. */
+.hover-card-notes {
+  padding-top: 0.4rem;
+  border-top: 1px solid #374151;
+  color: #9ca3af;
+  white-space: pre-wrap;
+}
+
+.level-dots-small {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.level-dot-small {
+  width: 0.7rem;
+  height: 0.7rem;
+  box-sizing: border-box;
+  border: 1.5px solid var(--branch-color);
+  border-radius: 50%;
+}
+
+.level-dot-small.filled {
+  background: var(--branch-color);
+}

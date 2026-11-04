@@ -17,6 +17,8 @@ type Bounds = { x: number; y: number; width: number; height: number }
 export function useZoom(
   svgRef: RefObject<SVGSVGElement | null>,
   bounds: Bounds,
+  /** Kaldes, når en zoom eller et træk begynder. Skal være stabil (useCallback). */
+  onZoomStart?: () => void,
 ) {
   const [transform, setTransform] = useState<ZoomTransform>(zoomIdentity)
   const behaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
@@ -34,6 +36,7 @@ export function useZoom(
         [x, y],
         [x + width, y + height],
       ])
+      .on('start', () => onZoomStart?.())
       .on('zoom', (event: D3ZoomEvent<SVGSVGElement, unknown>) => {
         setTransform(event.transform)
       })
@@ -46,7 +49,7 @@ export function useZoom(
       select(svg).on('.zoom', null)
       behaviorRef.current = null
     }
-  }, [svgRef, x, y, width, height])
+  }, [svgRef, x, y, width, height, onZoomStart])
 
   /** "Vis alt": viewBox viser allerede hele træet, så vi nulstiller blot. */
   const resetZoom = useCallback(() => {

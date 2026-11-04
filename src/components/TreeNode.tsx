@@ -14,10 +14,19 @@ type TreeNodeProps = {
   node: LayoutNode
   selected: boolean
   onSelect: (id: string) => void
+  /** Musen er over noden, eller den har fået fokus med tastaturet. */
+  onHoverStart: (id: string, element: Element) => void
+  onHoverEnd: () => void
 }
 
 /** Cirkel og navn for én node. Positionen kommer færdigregnet fra layoutet. */
-export function TreeNode({ node, selected, onSelect }: TreeNodeProps) {
+export function TreeNode({
+  node,
+  selected,
+  onSelect,
+  onHoverStart,
+  onHoverEnd,
+}: TreeNodeProps) {
   const radius = RADIUS[node.kind]
   const color = node.color ?? ROOT_COLOR
   const lines = wrapLabel(node.name)
@@ -47,6 +56,10 @@ export function TreeNode({ node, selected, onSelect }: TreeNodeProps) {
       aria-pressed={selected}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
+      onMouseEnter={(event) => onHoverStart(node.id, event.currentTarget)}
+      onMouseLeave={onHoverEnd}
+      onFocus={(event) => onHoverStart(node.id, event.currentTarget)}
+      onBlur={onHoverEnd}
     >
       {selected && (
         <circle
