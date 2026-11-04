@@ -16,3 +16,32 @@ body {
   height: 100vh;
   background: #000;
 }
+
+.tree-wrapper {
+  position: relative;
+}
+
+.tree-view {
+  cursor: grab;
+}
+
+.tree-view:active {
+  cursor: grabbing;
+}
+
+.reset-zoom {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  background: #111827;
+  color: #e5e7eb;
+  font: inherit;
+  cursor: pointer;
+}
+
+.reset-zoom:hover {
+  background: #1f2937;
+}

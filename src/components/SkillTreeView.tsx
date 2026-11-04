@@ -1,31 +1,37 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { computeLayout } from '../layout/computeLayout'
 import { useTree } from '../store/useTree'
-import { TreeEdge } from './TreeEdge'
-import { TreeNode } from './TreeNode'
+import { TreeBackground } from './TreeBackground'
+import { TreeDrawing } from './TreeDrawing'
+import { useZoom } from './useZoom'
 
-/** Hele træet som én SVG. Layoutet regnes af d3; React tegner kun resultatet. */
+/** Hele træet som én SVG med zoom og panorering. */
 export function SkillTreeView() {
   const { tree } = useTree()
+  const svgRef = useRef<SVGSVGElement>(null)
 
   // Regnes kun om, når selve træet er ændret.
   const layout = useMemo(() => computeLayout(tree.root), [tree.root])
   const { x, y, width, height } = layout.bounds
+  const { transform, resetZoom } = useZoom(svgRef, layout.bounds)
 
   return (
-    <svg
-      className="tree-view"
-      viewBox={`${x} ${y} ${width} ${height}`}
-      role="img"
-      aria-label="Skill tree"
-    >
-      {/* Forbindelser først, så noderne tegnes oven på dem. */}
-      {layout.links.map((link) => (
-        <TreeEdge key={link.id} link={link} />
-      ))}
-      {layout.nodes.map((node) => (
-        <TreeNode key={node.id} node={node} />
-      ))}
-    </svg>
+    <div className="tree-wrapper">
+      <svg
+        ref={svgRef}
+        className="tree-view"
+        viewBox={`${x} ${y} ${width} ${height}`}
+        role="img"
+        aria-label="Skill tree"
+      >
+        <TreeBackground transform={transform.toString()} />
+        <g transform={transform.toString()}>
+          <TreeDrawing layout={layout} />
+        </g>
+      </svg>
+      <button type="button" className="reset-zoom" onClick={resetZoom}>
+        Vis alt
+      </button>
+    </div>
   )
 }

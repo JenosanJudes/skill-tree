@@ -9,7 +9,7 @@ Personlig webapp, der viser mine færdigheder som et interaktivt skill tree i sp
 - React 19 + TypeScript (strict), bygget med Vite
 - Test: Vitest + React Testing Library (jsdom)
 - Linting: oxlint. Formatering: Prettier (ingen semikolon, enkelte anførselstegn)
-- `d3-hierarchy` (layout, fra trin 3). Senere: `d3-zoom` (zoom og panorering, trin 4)
+- `d3-hierarchy` (layout, trin 3), `d3-zoom` og `d3-selection` (zoom og panorering, trin 4)
 - Lagring: localStorage (træet), IndexedDB (baggrundsbillede, trin 8)
 - Deploy: GitHub Pages via `.github/workflows/deploy.yml` ved push til `main`. `base` i `vite.config.ts` er `/skill-tree/`.
 
@@ -31,13 +31,16 @@ src/
   components/  SkillTreeView.tsx    hele træet som én SVG
                TreeNode.tsx         cirkel og navn
                TreeEdge.tsx         forbindelse mellem forælder og barn
+               TreeBackground.tsx   prikmønster, flytter og zoomer med træet
+               TreeDrawing.tsx      noder og forbindelser (memo, tegnes ikke ved zoom)
+               useZoom.ts           d3-zoom koblet på SVG'en; giver transform og resetZoom
 docs/spec.md   specifikation og faseplan
 ```
 
 ## Konventioner
 
 - Lagdeling: komponenter kalder kun Tree store, og kun Tree store taler med lagringen.
-- d3 beregner positioner, React tegner SVG'en. d3 må aldrig ændre DOM'en direkte.
+- d3 beregner positioner, React tegner SVG'en. d3 må aldrig ændre DOM'en direkte. d3-zoom giver kun en transform, som lægges i React-state og sættes på en `<g>`.
 - Reducer og hjælpefunktioner er rene: ingen sideeffekter, data ændres aldrig på stedet, der returneres altid et nyt objekt.
 - Filer med komponenter eksporterer kun komponenter (ellers virker Fast refresh ikke); hooks, Context-objekter og konstanter ligger i egne `.ts`-filer.
 - Regler fra specen: stamme og hovedgrene har intet `level`; kun hovedgrene har `color`, og undergrene arver den; stammen kan ikke slettes.
