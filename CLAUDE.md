@@ -35,6 +35,7 @@ src/
                TreeDrawing.tsx      noder og forbindelser (memo, tegnes ikke ved zoom)
                useZoom.ts           d3-zoom koblet på SVG'en; giver transform og resetZoom
 docs/spec.md   specifikation og faseplan
+docs/plan-trin5.md   plan for trin 5 (sidepanel og redigering)
 ```
 
 ## Konventioner
@@ -52,7 +53,9 @@ docs/spec.md   specifikation og faseplan
 
 - Plan før kode. Brugeren godkender planen, før der skrives kode.
 - Kør aldrig git-kommandoer, der ændrer repoet (add, commit, push, checkout). Brugeren gør det selv og får et forslag til commit-besked efter hvert trin.
-- Forklar vigtige valg kort og pædagogisk; brugeren er studerende.
+- Læring går forud for hastighed. Brugeren er studerende og vil forstå hele processen. Det vigtigste er at forklare som en lærer: hvad elementerne betyder, hvad der sker, og hvorfor. Det gælder valg i koden, men også installationer, terminal- og git-kommandoer.
+- Når du kører en kommando, så forklar kort, hvad den gør, og hvad outputtet betyder. Du må gerne selv køre tests, lint og build.
+- Tag ét trin ad gangen. Du behøver ikke holde pause mellem trinene, men forklar hvert trin, når det er gjort.
 - Opdater denne fil, når der træffes nye beslutninger.
 
 ## Kommandoer
