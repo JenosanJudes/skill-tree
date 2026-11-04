@@ -5,8 +5,14 @@ import { TreeBackground } from './TreeBackground'
 import { TreeDrawing } from './TreeDrawing'
 import { useZoom } from './useZoom'
 
+type SkillTreeViewProps = {
+  selectedId: string | null
+  /** Kaldes med nodens id ved klik på en node og med null ved klik ved siden af. */
+  onSelect: (id: string | null) => void
+}
+
 /** Hele træet som én SVG med zoom og panorering. */
-export function SkillTreeView() {
+export function SkillTreeView({ selectedId, onSelect }: SkillTreeViewProps) {
   const { tree } = useTree()
   const svgRef = useRef<SVGSVGElement>(null)
 
@@ -17,16 +23,24 @@ export function SkillTreeView() {
 
   return (
     <div className="tree-wrapper">
+      {/* role="group" og ikke "img": et billede må ikke indeholde knapper,
+          så skærmlæsere ville skjule noderne. d3-zoom sluger selv klikket
+          efter et træk, så panorering lukker ikke panelet. */}
       <svg
         ref={svgRef}
         className="tree-view"
         viewBox={`${x} ${y} ${width} ${height}`}
-        role="img"
+        role="group"
         aria-label="Skill tree"
+        onClick={() => onSelect(null)}
       >
         <TreeBackground transform={transform.toString()} />
         <g transform={transform.toString()}>
-          <TreeDrawing layout={layout} />
+          <TreeDrawing
+            layout={layout}
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
         </g>
       </svg>
       <button type="button" className="reset-zoom" onClick={resetZoom}>

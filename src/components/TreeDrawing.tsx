@@ -5,14 +5,19 @@ import { TreeNode } from './TreeNode'
 
 type TreeDrawingProps = {
   layout: Layout
+  selectedId: string | null
+  onSelect: (id: string) => void
 }
 
 /**
- * Forbindelser og noder. memo gør, at den kun tegnes igen, når layoutet
- * ændres, og ikke ved hvert hjul-tick under zoom (kun <g>'s transform ændres).
+ * Forbindelser og noder. memo gør, at den kun tegnes igen, når layoutet eller
+ * den valgte node ændres, og ikke ved hvert hjul-tick under zoom (kun <g>'s
+ * transform ændres). Derfor skal onSelect være den samme funktion hver gang.
  */
 export const TreeDrawing = memo(function TreeDrawing({
   layout,
+  selectedId,
+  onSelect,
 }: TreeDrawingProps) {
   return (
     <>
@@ -21,7 +26,12 @@ export const TreeDrawing = memo(function TreeDrawing({
         <TreeEdge key={link.id} link={link} />
       ))}
       {layout.nodes.map((node) => (
-        <TreeNode key={node.id} node={node} />
+        <TreeNode
+          key={node.id}
+          node={node}
+          selected={node.id === selectedId}
+          onSelect={onSelect}
+        />
       ))}
     </>
   )

@@ -122,6 +122,111 @@ describe('treeReducer', () => {
     })
   })
 
+  describe('setDescription og setNotes', () => {
+    it('sætter beskrivelse og noter uden mellemrum omkring', () => {
+      let next = treeReducer(makeTestTree(), {
+        type: 'setDescription',
+        id: 'leaf-a',
+        description: '  Kan det  ',
+      })
+      next = treeReducer(next, { type: 'setNotes', id: 'leaf-a', notes: 'Hej' })
+      const leaf = findNode(next.root, 'leaf-a')
+      expect(leaf?.description).toBe('Kan det')
+      expect(leaf?.notes).toBe('Hej')
+    })
+
+    it('fjerner feltet helt, når teksten er tom', () => {
+      const withNotes = treeReducer(makeTestTree(), {
+        type: 'setNotes',
+        id: 'leaf-a',
+        notes: 'Hej',
+      })
+      const next = treeReducer(withNotes, {
+        type: 'setNotes',
+        id: 'leaf-a',
+        notes: '   ',
+      })
+      expect(findNode(next.root, 'leaf-a')).not.toHaveProperty('notes')
+    })
+
+    it('returnerer samme træ, når teksten er uændret', () => {
+      const state = makeTestTree()
+      expect(
+        treeReducer(state, { type: 'setNotes', id: 'leaf-a', notes: '' }),
+      ).toBe(state)
+    })
+  })
+
+  describe('addLink og removeLink', () => {
+    const link = { type: 'addLink' as const, id: 'leaf-a', title: 'Docs' }
+
+    it('tilføjer et link med http eller https', () => {
+      let next = treeReducer(makeTestTree(), {
+        ...link,
+        url: 'https://react.dev',
+      })
+      next = treeReducer(next, { ...link, title: '', url: 'http://a.dk' })
+      expect(findNode(next.root, 'leaf-a')?.links).toEqual([
+        { title: 'Docs', url: 'https://react.dev' },
+        // Uden titel bruges adressen som titel.
+        { title: 'http://a.dk', url: 'http://a.dk' },
+      ])
+    })
+
+    it('afviser adresser, der ikke er http eller https', () => {
+      const state = makeTestTree()
+      for (const url of [
+        'javascript:alert(1)',
+        'react.dev',
+        'ftp://a.dk',
+        '',
+      ]) {
+        expect(treeReducer(state, { ...link, url })).toBe(state)
+      }
+    })
+
+    it('sletter et link og fjerner feltet, når listen bliver tom', () => {
+      let next = treeReducer(makeTestTree(), { ...link, url: 'https://a.dk' })
+      next = treeReducer(next, { ...link, url: 'https://b.dk' })
+
+      next = treeReducer(next, { type: 'removeLink', id: 'leaf-a', index: 0 })
+      expect(findNode(next.root, 'leaf-a')?.links).toEqual([
+        { title: 'Docs', url: 'https://b.dk' },
+      ])
+
+      next = treeReducer(next, { type: 'removeLink', id: 'leaf-a', index: 0 })
+      expect(findNode(next.root, 'leaf-a')).not.toHaveProperty('links')
+    })
+
+    it('ignorerer et index, der ikke findes', () => {
+      const state = makeTestTree()
+      expect(
+        treeReducer(state, { type: 'removeLink', id: 'leaf-a', index: 0 }),
+      ).toBe(state)
+    })
+  })
+
+  describe('setColor', () => {
+    it('sætter farven på en hovedgren med små bogstaver', () => {
+      const next = treeReducer(makeTestTree(), {
+        type: 'setColor',
+        id: 'branch',
+        color: '#00FF88',
+      })
+      expect(findNode(next.root, 'branch')?.color).toBe('#00ff88')
+    })
+
+    it('ignorerer stamme, undergrene og ugyldige farver', () => {
+      const state = makeTestTree()
+      const set = (id: string, color: string) =>
+        treeReducer(state, { type: 'setColor', id, color })
+      expect(set('root', '#00ff88')).toBe(state)
+      expect(set('leaf-a', '#00ff88')).toBe(state)
+      expect(set('branch', 'red')).toBe(state)
+      expect(set('branch', '#0f8')).toBe(state)
+    })
+  })
+
   it('ændrer aldrig det gamle træ', () => {
     const state = makeTestTree()
     const snapshot = structuredClone(state)
@@ -129,6 +234,14 @@ describe('treeReducer', () => {
     treeReducer(state, { type: 'renameNode', id: 'deep', name: 'X' })
     treeReducer(state, { type: 'deleteNode', id: 'leaf-a' })
     treeReducer(state, { type: 'setLevel', id: 'leaf-a', level: 5 })
+    treeReducer(state, { type: 'setNotes', id: 'leaf-a', notes: 'X' })
+    treeReducer(state, {
+      type: 'addLink',
+      id: 'leaf-a',
+      title: 'X',
+      url: 'https://x.dk',
+    })
+    treeReducer(state, { type: 'setColor', id: 'branch', color: '#000000' })
 
     expect(state).toEqual(snapshot)
   })

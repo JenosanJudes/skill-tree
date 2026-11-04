@@ -1,6 +1,6 @@
 # Plan: trin 5, sidepanel og redigering
 
-Status: forslag, endnu ikke godkendt. Gennemgå planen med brugeren, før der skrives kode.
+Status: godkendt 2026-11-04, med farvevælger i del C.
 
 **Mål:** Brugeren klikker på en node og redigerer den i et sidepanel. Alt, hvad der ændres, gemmes automatisk i browseren.
 

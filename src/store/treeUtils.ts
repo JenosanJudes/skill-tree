@@ -10,6 +10,19 @@ export function findNode(node: SkillNode, id: string): SkillNode | undefined {
   return undefined
 }
 
+/**
+ * Vejen fra stammen ned til noden med `id`, begge medregnet. Første element er
+ * altså stammen, andet er hovedgrenen (hvis der er en), og sidste er noden.
+ */
+export function findPath(node: SkillNode, id: string): SkillNode[] | undefined {
+  if (node.id === id) return [node]
+  for (const child of node.children) {
+    const path = findPath(child, id)
+    if (path) return [node, ...path]
+  }
+  return undefined
+}
+
 /** Dybden af noden: 0 = stammen, 1 = hovedgren, 2 eller mere = undergren. */
 export function getDepth(
   node: SkillNode,
@@ -42,6 +55,20 @@ export function updateNode(
     return updated
   })
   return changed ? { ...node, children } : node
+}
+
+/**
+ * Kun almindelige webadresser er tilladt. En adresse som `javascript:...`
+ * ville køre kode, når man klikker på linket, og skal derfor afvises.
+ */
+export function isSafeUrl(url: string): boolean {
+  if (!/^https?:\/\//i.test(url)) return false
+  try {
+    new URL(url)
+    return true
+  } catch {
+    return false
+  }
 }
 
 /** Returnerer et nyt træ uden noden med `id` (og dens undernoder). */

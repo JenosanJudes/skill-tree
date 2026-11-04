@@ -32,7 +32,7 @@ body {
 .reset-zoom {
   position: absolute;
   top: 1rem;
-  right: 1rem;
+  left: 1rem;
   padding: 0.4rem 0.8rem;
   border: 1px solid #374151;
   border-radius: 6px;
@@ -44,4 +44,189 @@ body {
 
 .reset-zoom:hover {
   background: #1f2937;
+}
+
+/* Noder i træet kan klikkes og nås med tastaturet. */
+.tree-node {
+  cursor: pointer;
+}
+
+.tree-node:focus {
+  outline: none;
+}
+
+.tree-node:focus-visible {
+  outline: 2px dashed #9ca3af;
+  outline-offset: 4px;
+}
+
+/* Sidepanelet ligger oven på træet og skubber det ikke. */
+.app {
+  position: relative;
+}
+
+.side-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  width: min(340px, 100%);
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: rgb(17 24 39 / 0.95);
+  border-left: 1px solid #374151;
+}
+
+.side-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.side-panel-kind {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.field-label {
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #d1d5db;
+}
+
+.field-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  background: #0b0f17;
+  color: #e5e7eb;
+  font: inherit;
+  resize: vertical;
+}
+
+.field-input:focus {
+  outline: 2px solid #60a5fa;
+  outline-offset: -1px;
+}
+
+.field-error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #f87171;
+}
+
+/* Niveau: fem cirkler, fyldt i grenens farve op til det valgte niveau. */
+.level-dots {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.level-dot {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 2px solid var(--branch-color);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.level-dot[aria-pressed='true'] {
+  background: var(--branch-color);
+}
+
+.color-input {
+  width: 3rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+.link-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.link-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.link-list a {
+  color: #93c5fd;
+  overflow-wrap: anywhere;
+}
+
+.link-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.small-button,
+.action-button {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  background: #1f2937;
+  color: #e5e7eb;
+  font: inherit;
+  cursor: pointer;
+}
+
+.small-button:hover,
+.action-button:hover {
+  background: #374151;
+}
+
+.link-form .small-button {
+  align-self: flex-start;
+}
+
+.side-panel-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.action-button {
+  padding: 0.45rem 0.8rem;
+}
+
+.action-button.danger {
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.action-button.danger.confirming {
+  background: #7f1d1d;
+  color: #fff;
 }

@@ -5,6 +5,9 @@ import { validateTree } from './validateTree'
 export const STORAGE_KEY = 'skill-tree'
 export const BACKUP_KEY = 'skill-tree:backup'
 
+/** Ventetid uden nye ændringer, før træet gemmes (debounce). */
+export const SAVE_DELAY_MS = 300
+
 /** En frisk kopi af startskabelonen. */
 export function getDefaultTree(): SkillTree {
   const result = validateTree(defaultTreeJson)

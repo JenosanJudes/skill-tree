@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react'
+import type { KeyboardEvent, MouseEvent, SVGProps } from 'react'
 import type { LayoutNode } from '../layout/computeLayout'
 import { wrapLabel } from '../layout/wrapLabel'
 
@@ -8,18 +8,55 @@ const LOCKED_COLOR = '#6b7280'
 const LABEL_COLOR = '#e5e7eb'
 const LINE_HEIGHT = 15
 
+const RING_GAP = 6
+
 type TreeNodeProps = {
   node: LayoutNode
+  selected: boolean
+  onSelect: (id: string) => void
 }
 
 /** Cirkel og navn for én node. Positionen kommer færdigregnet fra layoutet. */
-export function TreeNode({ node }: TreeNodeProps) {
+export function TreeNode({ node, selected, onSelect }: TreeNodeProps) {
   const radius = RADIUS[node.kind]
   const color = node.color ?? ROOT_COLOR
   const lines = wrapLabel(node.name)
 
+  function handleClick(event: MouseEvent) {
+    // Ellers når klikket op til SVG'en, som tolker det som "klik ved siden af".
+    event.stopPropagation()
+    onSelect(node.id)
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    // En rigtig <button> reagerer på Enter og mellemrum; det efterligner vi.
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onSelect(node.id)
+    }
+  }
+
   return (
-    <g transform={`translate(${node.x},${node.y})`} data-node-id={node.id}>
+    <g
+      transform={`translate(${node.x},${node.y})`}
+      data-node-id={node.id}
+      className="tree-node"
+      role="button"
+      tabIndex={0}
+      aria-label={node.name}
+      aria-pressed={selected}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
+      {selected && (
+        <circle
+          className="selection-ring"
+          r={radius + RING_GAP}
+          fill="none"
+          stroke={LABEL_COLOR}
+          strokeWidth={2}
+        />
+      )}
       <circle r={radius} {...circleStyle(node, color)} />
       <text
         y={radius + 16}

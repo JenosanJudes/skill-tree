@@ -1,7 +1,13 @@
 import type { Level, SkillNode, SkillTree } from '../types/skillTree'
-import { findNode, getDepth, removeNode, updateNode } from './treeUtils'
+import {
+  findNode,
+  getDepth,
+  isSafeUrl,
+  removeNode,
+  updateNode,
+} from './treeUtils'
 
-/** Farve til en ny hovedgren, indtil den kan vælges i sidepanelet (trin 5). */
+/** Farve til en ny hovedgren. Den kan ændres i sidepanelet bagefter. */
 export const DEFAULT_BRANCH_COLOR = '#90a4ae'
 
 export type TreeAction =
@@ -9,6 +15,11 @@ export type TreeAction =
   | { type: 'renameNode'; id: string; name: string }
   | { type: 'deleteNode'; id: string }
   | { type: 'setLevel'; id: string; level: Level }
+  | { type: 'setDescription'; id: string; description: string }
+  | { type: 'setNotes'; id: string; notes: string }
+  | { type: 'addLink'; id: string; title: string; url: string }
+  | { type: 'removeLink'; id: string; index: number }
+  | { type: 'setColor'; id: string; color: string }
 
 /** Den del af TreeAction, der har type 'addNode'. */
 export type AddNodeAction = Extract<TreeAction, { type: 'addNode' }>
@@ -77,9 +88,86 @@ export function treeReducer(state: SkillTree, action: TreeAction): SkillTree {
         ),
       )
     }
+
+    case 'setDescription':
+      return withRoot(
+        state,
+        updateNode(state.root, action.id, (node) =>
+          withText(node, 'description', action.description),
+        ),
+      )
+
+    case 'setNotes':
+      return withRoot(
+        state,
+        updateNode(state.root, action.id, (node) =>
+          withText(node, 'notes', action.notes),
+        ),
+      )
+
+    case 'addLink': {
+      const url = action.url.trim()
+      if (!isSafeUrl(url)) return state
+      // Uden titel bruges adressen selv som titel.
+      const link = { title: action.title.trim() || url, url }
+      return withRoot(
+        state,
+        updateNode(state.root, action.id, (node) => ({
+          ...node,
+          links: [...(node.links ?? []), link],
+        })),
+      )
+    }
+
+    case 'removeLink':
+      return withRoot(
+        state,
+        updateNode(state.root, action.id, (node) => {
+          const links = node.links ?? []
+          if (action.index < 0 || action.index >= links.length) return node
+          const remaining = links.filter((_, index) => index !== action.index)
+          if (remaining.length > 0) return { ...node, links: remaining }
+          // Den sidste er væk: fjern hele feltet i stedet for en tom liste.
+          const copy = { ...node }
+          delete copy.links
+          return copy
+        }),
+      )
+
+    case 'setColor': {
+      // Kun hovedgrene har farve, og kun i formen #rrggbb,
+      // som er det, en farvevælger (<input type="color">) giver.
+      if (getDepth(state.root, action.id) !== 1) return state
+      if (!/^#[0-9a-f]{6}$/i.test(action.color)) return state
+      const color = action.color.toLowerCase()
+      return withRoot(
+        state,
+        updateNode(state.root, action.id, (node) =>
+          node.color === color ? node : { ...node, color },
+        ),
+      )
+    }
   }
 }
 
 function withRoot(state: SkillTree, root: SkillNode): SkillTree {
   return root === state.root ? state : { ...state, root }
+}
+
+/**
+ * Sætter et valgfrit tekstfelt. En tom tekst fjerner feltet helt, så den
+ * gemte JSON ikke fyldes med `"notes": ""`. Uændret tekst giver samme node.
+ */
+function withText(
+  node: SkillNode,
+  key: 'description' | 'notes',
+  value: string,
+): SkillNode {
+  const text = value.trim()
+  if ((node[key] ?? '') === text) return node
+  if (text) return { ...node, [key]: text }
+  // delete på en kopi, ikke på den oprindelige node, så reduceren forbliver ren.
+  const copy = { ...node }
+  delete copy[key]
+  return copy
 }

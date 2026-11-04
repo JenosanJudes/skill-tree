@@ -20,10 +20,10 @@ src/
   types/       skillTree.ts         typerne fra datamodellen
   data/        defaultTree.json     startskabelon
   store/       treeReducer.ts       rene handlinger på træet
-               treeUtils.ts         hjælpefunktioner (find, opdater)
+               treeUtils.ts         hjælpefunktioner (find, sti, opdater, isSafeUrl)
                validateTree.ts      validering, bruges ved indlæsning og import
                storage.ts           gem/indlæs i localStorage
-               TreeContext.tsx      TreeProvider: useReducer + Context
+               TreeContext.tsx      TreeProvider: useReducer + Context + autosave
                useTree.ts           Context-objekt og useTree-hook
                testTree.ts          lille fast træ til tests (ikke skabelonen)
   layout/      computeLayout.ts     d3-hierarchy: positioner og forbindelser (ren)
@@ -34,8 +34,12 @@ src/
                TreeBackground.tsx   prikmønster, flytter og zoomer med træet
                TreeDrawing.tsx      noder og forbindelser (memo, tegnes ikke ved zoom)
                useZoom.ts           d3-zoom koblet på SVG'en; giver transform og resetZoom
+               SidePanel.tsx        redigering af den valgte node (navn, tekst, niveau, farve, links, tilføj, slet)
+               EditableText.tsx     tekstfelt med kladde; gemmer ved blur/Enter, Escape fortryder
+               LevelPicker.tsx      fem cirkler til niveau 0-5
+               LinkEditor.tsx       liste og formular til links
 docs/spec.md   specifikation og faseplan
-docs/plan-trin5.md   plan for trin 5 (sidepanel og redigering)
+docs/plan-trin5.md   plan for trin 5 (sidepanel og redigering), gennemført
 ```
 
 ## Konventioner
@@ -45,6 +49,12 @@ docs/plan-trin5.md   plan for trin 5 (sidepanel og redigering)
 - Reducer og hjælpefunktioner er rene: ingen sideeffekter, data ændres aldrig på stedet, der returneres altid et nyt objekt.
 - Filer med komponenter eksporterer kun komponenter (ellers virker Fast refresh ikke); hooks, Context-objekter og konstanter ligger i egne `.ts`-filer.
 - Regler fra specen: stamme og hovedgrene har intet `level`; kun hovedgrene har `color`, og undergrene arver den; stammen kan ikke slettes.
+- Valgt node er UI-tilstand (`useState` i `App`), ikke data i Tree store.
+- Træet gemmes automatisk med debounce (`SAVE_DELAY_MS` i `storage.ts`). Det træ, appen startede med, gemmes ikke igen.
+- Tomme tekstfelter (`description`, `notes`) og tomme `links` fjernes fra noden i stedet for at gemmes tomme.
+- Links skal være `http://` eller `https://` (`isSafeUrl`). Det tjekkes i reduceren og igen, før et link vises, fordi importerede data kan indeholde andet. Links åbner med `target="_blank" rel="noopener noreferrer"`.
+- Farver er `#rrggbb`, fordi `<input type="color">` kun kan det.
+- SVG'en har `role="group"` og ikke `img`, fordi noderne er knapper (`role="button"`, `tabIndex={0}`).
 - Kode og identifiers på engelsk. Kommentarer, testnavne, UI-tekster og commit-beskeder på dansk.
 - Tests bruger `makeTestTree()` og ikke startskabelonen, så de ikke afhænger af skabelonens indhold.
 - Tests ligger ved siden af filen: `treeReducer.ts` → `treeReducer.test.ts`. Importer `describe`, `it` og `expect` fra `vitest`.

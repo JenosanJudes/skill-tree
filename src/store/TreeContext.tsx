@@ -1,7 +1,7 @@
-import { useMemo, useReducer } from 'react'
+import { useEffect, useMemo, useReducer, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { SkillTree } from '../types/skillTree'
-import { loadTree } from './storage'
+import { SAVE_DELAY_MS, loadTree, saveTree } from './storage'
 import { treeReducer } from './treeReducer'
 import { TreeContext } from './useTree'
 
@@ -12,9 +12,8 @@ type TreeProviderProps = {
 }
 
 /**
- * Tree store: holder træet i hukommelsen og stiller det til rådighed for alle
- * komponenter nedenunder. Gemning i localStorage kommer i trin 5, hvor træet
- * kan redigeres.
+ * Tree store: holder træet i hukommelsen, stiller det til rådighed for alle
+ * komponenter nedenunder og gemmer det automatisk i localStorage.
  */
 export function TreeProvider({ children, initialTree }: TreeProviderProps) {
   // Tredje argument kører kun ved første render, så loadTree() ikke kaldes
@@ -24,6 +23,23 @@ export function TreeProvider({ children, initialTree }: TreeProviderProps) {
     initialTree,
     (initial) => initial ?? loadTree(),
   )
+
+  // Det træ, vi startede med. Det er allerede gemt (eller er skabelonen),
+  // så det skal ikke skrives igen, før brugeren har ændret noget.
+  const startTree = useRef(tree)
+
+  // Autosave med debounce: hver ændring starter en ny nedtælling og annullerer
+  // den forrige (via oprydningsfunktionen). Først når der har været stille i
+  // SAVE_DELAY_MS, gemmes træet. Så skrives der ikke ved hvert tastetryk.
+  useEffect(() => {
+    if (tree === startTree.current) return
+    const timer = setTimeout(() => {
+      if (!saveTree(tree)) {
+        console.warn('Træet kunne ikke gemmes i localStorage.')
+      }
+    }, SAVE_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [tree])
 
   // Uden useMemo ville value være et nyt objekt ved hver render, og alle
   // komponenter, der bruger træet, ville tegnes igen uden grund.
