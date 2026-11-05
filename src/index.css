@@ -21,6 +21,18 @@ body {
   position: relative;
 }
 
+/* Eget baggrundsbillede: dækker hele visningen, og SVG'en bliver
+   gennemsigtig, så billedet kan ses bag træet. */
+.tree-wrapper.has-image {
+  background-color: #000;
+  background-size: cover;
+  background-position: center;
+}
+
+.tree-wrapper.has-image .tree-view {
+  background: transparent;
+}
+
 .tree-view {
   cursor: grab;
 }
@@ -108,6 +120,11 @@ body {
 /* Noder i træet kan klikkes og nås med tastaturet. */
 .tree-node {
   cursor: pointer;
+}
+
+/* Glorien må ikke gøre det område, der reagerer på musen, større. */
+.node-glow {
+  pointer-events: none;
 }
 
 .tree-node:focus {

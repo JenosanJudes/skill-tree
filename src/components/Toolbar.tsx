@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import type { ChangeEvent, KeyboardEvent } from 'react'
+import { ALLOWED_TYPES, checkBackgroundFile } from '../store/backgroundStorage'
 import { downloadTree, parseImport } from '../store/fileTransfer'
 import { countNodes } from '../store/treeUtils'
 import { useTree } from '../store/useTree'
@@ -14,19 +15,61 @@ type Popover =
   | { kind: 'export' }
   | { kind: 'confirm'; tree: SkillTree; fileName: string }
   | { kind: 'error'; errors: string[]; fileName: string }
+  | { kind: 'background'; error?: string }
 
 type ToolbarProps = {
   /** Kaldes, når et importeret træ har erstattet det gamle. */
   onImported: () => void
+  hasBackground: boolean
+  /** Gemmer og viser et nyt baggrundsbillede. Kaster en fejl, hvis det mislykkes. */
+  onBackgroundChosen: (file: File) => Promise<void>
+  onBackgroundRemoved: () => Promise<void>
 }
 
-/** Knapperne "Eksportér" og "Importér" med deres små bokse. */
-export function Toolbar({ onImported }: ToolbarProps) {
+/** Knapperne "Eksportér", "Importér" og "Baggrund" med deres små bokse. */
+export function Toolbar({
+  onImported,
+  hasBackground,
+  onBackgroundChosen,
+  onBackgroundRemoved,
+}: ToolbarProps) {
   const { tree, dispatch } = useTree()
   const [popover, setPopover] = useState<Popover>({ kind: 'none' })
   const fileInput = useRef<HTMLInputElement>(null)
+  const imageInput = useRef<HTMLInputElement>(null)
 
   const close = () => setPopover({ kind: 'none' })
+
+  /** Åbner boksen, eller lukker den, hvis den allerede er åben. */
+  function toggle(kind: 'export' | 'background') {
+    setPopover(popover.kind === kind ? { kind: 'none' } : { kind })
+  }
+
+  async function handleImage(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    const error = checkBackgroundFile(file)
+    if (error) {
+      setPopover({ kind: 'background', error })
+      return
+    }
+    try {
+      await onBackgroundChosen(file)
+      close()
+    } catch {
+      setPopover({
+        kind: 'background',
+        error: 'Billedet kunne ikke gemmes i browseren.',
+      })
+    }
+  }
+
+  async function handleRemoveImage() {
+    await onBackgroundRemoved()
+    close()
+  }
 
   function handleExport(includeNotes: boolean) {
     downloadTree(tree, includeNotes)
@@ -64,11 +107,7 @@ export function Toolbar({ onImported }: ToolbarProps) {
           type="button"
           className="toolbar-button"
           aria-expanded={popover.kind === 'export'}
-          onClick={() =>
-            setPopover(
-              popover.kind === 'export' ? { kind: 'none' } : { kind: 'export' },
-            )
-          }
+          onClick={() => toggle('export')}
         >
           Eksportér
         </button>
@@ -88,7 +127,59 @@ export function Toolbar({ onImported }: ToolbarProps) {
           hidden
           onChange={handleFile}
         />
+        <button
+          type="button"
+          className="toolbar-button"
+          aria-expanded={popover.kind === 'background'}
+          onClick={() => toggle('background')}
+        >
+          Baggrund
+        </button>
+        <input
+          ref={imageInput}
+          type="file"
+          accept={ALLOWED_TYPES.join(',')}
+          aria-label="Vælg baggrundsbillede"
+          hidden
+          onChange={handleImage}
+        />
       </div>
+
+      {popover.kind === 'background' && (
+        <div className="popover" role="dialog" aria-label="Baggrund">
+          <p>
+            {hasBackground
+              ? 'Du bruger dit eget billede som baggrund.'
+              : 'Baggrunden er sort. Vælg et billede for at bruge dit eget.'}
+          </p>
+          {popover.error && (
+            <p className="field-error" role="alert">
+              {popover.error}
+            </p>
+          )}
+          <div className="popover-actions">
+            <button
+              type="button"
+              className="action-button"
+              onClick={() => imageInput.current?.click()}
+            >
+              Vælg billede
+            </button>
+            {hasBackground && (
+              <button
+                type="button"
+                className="action-button"
+                onClick={handleRemoveImage}
+              >
+                Fjern billede
+              </button>
+            )}
+            <button type="button" className="small-button" onClick={close}>
+              Luk
+            </button>
+          </div>
+        </div>
+      )}
 
       {popover.kind === 'export' && (
         <div className="popover" role="dialog" aria-label="Eksportér træet">

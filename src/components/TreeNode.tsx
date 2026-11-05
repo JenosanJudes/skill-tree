@@ -1,5 +1,6 @@
 import type { KeyboardEvent, MouseEvent, SVGProps } from 'react'
 import type { LayoutNode } from '../layout/computeLayout'
+import { GLOW_FILTER_ID, glowFor } from '../layout/glow'
 import { wrapLabel } from '../layout/wrapLabel'
 
 const RADIUS = { root: 18, branch: 15, skill: 11 } as const
@@ -30,6 +31,7 @@ export function TreeNode({
   const radius = RADIUS[node.kind]
   const color = node.color ?? ROOT_COLOR
   const lines = wrapLabel(node.name)
+  const glow = glowFor(node.kind, node.level)
 
   function handleClick(event: MouseEvent) {
     // Ellers når klikket op til SVG'en, som tolker det som "klik ved siden af".
@@ -61,6 +63,17 @@ export function TreeNode({
       onFocus={(event) => onHoverStart(node.id, event.currentTarget)}
       onBlur={onHoverEnd}
     >
+      {/* Glorien tegnes først, så den ligger bag cirklen. Den er en sløret
+          kopi i nodens egen farve (filteret står i TreeDrawing). */}
+      {glow && (
+        <circle
+          className="node-glow"
+          r={radius + glow.spread}
+          fill={color}
+          opacity={glow.opacity}
+          filter={`url(#${GLOW_FILTER_ID})`}
+        />
+      )}
       {selected && (
         <circle
           className="selection-ring"
@@ -91,7 +104,7 @@ export function TreeNode({
 /**
  * Stamme og hovedgrene er fyldte overskrifter. Undergrene: niveau 0 er gråt
  * og stiplet (ikke låst op); niveau 1-5 får stigende fyld i grenens farve.
- * Glød efter niveau kommer i trin 8.
+ * Gløden ligger for sig i glowFor (layout/glow.ts).
  */
 function circleStyle(
   node: LayoutNode,

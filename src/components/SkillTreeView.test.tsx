@@ -177,7 +177,66 @@ describe('SkillTreeView', () => {
 
   it('tegner én cirkel pr. node', () => {
     const { container } = renderTree()
-    expect(container.querySelectorAll('[data-node-id] circle')).toHaveLength(5)
+    // Glorierne er også cirkler, men tælles ikke med her.
+    expect(
+      container.querySelectorAll('[data-node-id] circle:not(.node-glow)'),
+    ).toHaveLength(5)
+  })
+
+  describe('glød', () => {
+    const glowOf = (container: HTMLElement, id: string) =>
+      container.querySelector(`[data-node-id="${id}"] .node-glow`)
+
+    it('gløder på niveau 1 og højere, men ikke på niveau 0', () => {
+      const { container } = renderTree()
+      expect(glowOf(container, 'leaf-a')).not.toBeNull() // niveau 1
+      expect(glowOf(container, 'deep')).toBeNull() // niveau 0
+    })
+
+    it('gløder stærkere på et højere niveau', () => {
+      const { container } = renderTree()
+      const opacity = (id: string) =>
+        Number(glowOf(container, id)?.getAttribute('opacity'))
+      expect(opacity('leaf-b')).toBeGreaterThan(opacity('leaf-a')) // 2 > 1
+    })
+
+    it('bruger grenens farve og glød-filteret', () => {
+      const { container } = renderTree()
+      const glow = glowOf(container, 'leaf-a')
+      expect(glow).toHaveAttribute('fill', '#ff0000')
+      expect(glow).toHaveAttribute('filter', 'url(#node-glow)')
+      expect(container.querySelector('filter#node-glow')).not.toBeNull()
+    })
+  })
+
+  describe('baggrundsbillede', () => {
+    function renderWithImage(backgroundUrl: string | null) {
+      return render(
+        <TreeProvider initialTree={makeTestTree()}>
+          <SkillTreeView
+            selectedId={null}
+            onSelect={vi.fn()}
+            backgroundUrl={backgroundUrl}
+          />
+        </TreeProvider>,
+      )
+    }
+
+    it('viser billedet og skjuler prikkerne', () => {
+      const { container } = renderWithImage('blob:billede')
+      const wrapper = container.querySelector('.tree-wrapper')
+      expect(wrapper).toHaveClass('has-image')
+      expect(wrapper?.getAttribute('style')).toContain('blob:billede')
+      expect(container.querySelector('pattern')).toBeNull()
+    })
+
+    it('viser prikkerne uden billede', () => {
+      const { container } = renderWithImage(null)
+      expect(container.querySelector('.tree-wrapper')).not.toHaveClass(
+        'has-image',
+      )
+      expect(container.querySelector('pattern')).not.toBeNull()
+    })
   })
 
   it('tegner én forbindelse pr. node undtagen stammen', () => {

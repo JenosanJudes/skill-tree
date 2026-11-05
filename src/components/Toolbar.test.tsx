@@ -1,6 +1,12 @@
 import { useEffect } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import { TreeProvider } from '../store/TreeContext'
 import { makeTestTree } from '../store/testTree'
 import { useTree } from '../store/useTree'
@@ -17,12 +23,27 @@ function TreeSpy() {
   return null
 }
 
-function renderToolbar(onImported = vi.fn()) {
+type BackgroundProps = {
+  hasBackground?: boolean
+  onBackgroundChosen?: (file: File) => Promise<void>
+  onBackgroundRemoved?: () => Promise<void>
+}
+
+function renderToolbar(onImported = vi.fn(), background: BackgroundProps = {}) {
   const tree = makeTestTree()
   tree.root.children[0].notes = 'Hemmelig note'
   render(
     <TreeProvider initialTree={tree}>
-      <Toolbar onImported={onImported} />
+      <Toolbar
+        onImported={onImported}
+        hasBackground={background.hasBackground ?? false}
+        onBackgroundChosen={
+          background.onBackgroundChosen ?? vi.fn(async () => {})
+        }
+        onBackgroundRemoved={
+          background.onBackgroundRemoved ?? vi.fn(async () => {})
+        }
+      />
       <TreeSpy />
     </TreeProvider>,
   )
@@ -92,6 +113,70 @@ describe('Toolbar', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Eksportér' }))
       fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('baggrund', () => {
+    function chooseImage(file: File) {
+      fireEvent.change(screen.getByLabelText('Vælg baggrundsbillede'), {
+        target: { files: [file] },
+      })
+    }
+
+    it('gemmer et gyldigt billede og lukker boksen', async () => {
+      const onBackgroundChosen = vi.fn(async () => {})
+      renderToolbar(vi.fn(), { onBackgroundChosen })
+      fireEvent.click(screen.getByRole('button', { name: 'Baggrund' }))
+      expect(screen.getByText(/Baggrunden er sort/)).toBeInTheDocument()
+
+      const image = new File(['x'], 'skov.png', { type: 'image/png' })
+      chooseImage(image)
+
+      await waitFor(() =>
+        expect(onBackgroundChosen).toHaveBeenCalledWith(image),
+      )
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      )
+    })
+
+    it('afviser en fil, der ikke er et billede', async () => {
+      const onBackgroundChosen = vi.fn(async () => {})
+      renderToolbar(vi.fn(), { onBackgroundChosen })
+      fireEvent.click(screen.getByRole('button', { name: 'Baggrund' }))
+      chooseImage(new File(['x'], 'cv.pdf', { type: 'application/pdf' }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('PNG')
+      expect(onBackgroundChosen).not.toHaveBeenCalled()
+    })
+
+    it('viser en fejl, hvis billedet ikke kan gemmes', async () => {
+      renderToolbar(vi.fn(), {
+        onBackgroundChosen: vi.fn(async () => {
+          throw new Error('Fuldt')
+        }),
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Baggrund' }))
+      chooseImage(new File(['x'], 'a.png', { type: 'image/png' }))
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'kunne ikke gemmes',
+      )
+    })
+
+    it('kan fjerne et billede, der er valgt', async () => {
+      const onBackgroundRemoved = vi.fn(async () => {})
+      renderToolbar(vi.fn(), { hasBackground: true, onBackgroundRemoved })
+      fireEvent.click(screen.getByRole('button', { name: 'Baggrund' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Fjern billede' }))
+      await waitFor(() => expect(onBackgroundRemoved).toHaveBeenCalled())
+    })
+
+    it('viser ikke "Fjern billede" uden et billede', () => {
+      renderToolbar()
+      fireEvent.click(screen.getByRole('button', { name: 'Baggrund' }))
+      expect(
+        screen.queryByRole('button', { name: 'Fjern billede' }),
+      ).not.toBeInTheDocument()
     })
   })
 

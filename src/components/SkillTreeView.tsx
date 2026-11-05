@@ -14,13 +14,19 @@ type SkillTreeViewProps = {
   onSelect: (id: string | null) => void
   /** Flere knapper, der vises ved siden af "Vis alt" (fx værktøjslinjen). */
   controls?: ReactNode
+  /** Adresse til et eget baggrundsbillede. Uden den er baggrunden sort med prikker. */
+  backgroundUrl?: string | null
 }
+
+/** Slør over baggrundsbilledet, så noder og navne kan læses. */
+const BACKGROUND_SHADE = 'linear-gradient(rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.55))'
 
 /** Hele træet som én SVG med zoom, panorering og hover-boks. */
 export function SkillTreeView({
   selectedId,
   onSelect,
   controls,
+  backgroundUrl,
 }: SkillTreeViewProps) {
   const { tree } = useTree()
   const svgRef = useRef<SVGSVGElement>(null)
@@ -35,7 +41,17 @@ export function SkillTreeView({
   const { transform, resetZoom } = useZoom(svgRef, layout.bounds, hide)
 
   return (
-    <div className="tree-wrapper" ref={wrapperRef}>
+    <div
+      className={backgroundUrl ? 'tree-wrapper has-image' : 'tree-wrapper'}
+      ref={wrapperRef}
+      // Billedet ligger på wrapperen og ikke i SVG'en, så det står stille,
+      // mens træet zoomes. Sløret er en ensfarvet "gradient" oven på billedet.
+      style={
+        backgroundUrl
+          ? { backgroundImage: `${BACKGROUND_SHADE}, url("${backgroundUrl}")` }
+          : undefined
+      }
+    >
       {/* role="group" og ikke "img": et billede må ikke indeholde knapper,
           så skærmlæsere ville skjule noderne. d3-zoom sluger selv klikket
           efter et træk, så panorering lukker ikke panelet. */}
@@ -47,7 +63,8 @@ export function SkillTreeView({
         aria-label="Skill tree"
         onClick={() => onSelect(null)}
       >
-        <TreeBackground transform={transform.toString()} />
+        {/* Prikkerne vises kun, når der ikke er et billede. */}
+        {!backgroundUrl && <TreeBackground transform={transform.toString()} />}
         <g transform={transform.toString()}>
           <TreeDrawing
             layout={layout}

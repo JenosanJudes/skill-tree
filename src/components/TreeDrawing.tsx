@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import type { Layout } from '../layout/computeLayout'
+import { GLOW_BLUR, GLOW_FILTER_ID } from '../layout/glow'
 import { TreeEdge } from './TreeEdge'
 import { TreeNode } from './TreeNode'
 
@@ -25,6 +26,20 @@ export const TreeDrawing = memo(function TreeDrawing({
 }: TreeDrawingProps) {
   return (
     <>
+      <defs>
+        {/* Slører det, der bruger filteret. Området er gjort 3 gange så stort
+            som figuren (x/y -100 %, bredde/højde 300 %), ellers ville
+            sløringen blive klippet af ved kanten. */}
+        <filter
+          id={GLOW_FILTER_ID}
+          x="-100%"
+          y="-100%"
+          width="300%"
+          height="300%"
+        >
+          <feGaussianBlur stdDeviation={GLOW_BLUR} />
+        </filter>
+      </defs>
       {/* Forbindelser først, så noderne tegnes oven på dem. */}
       {layout.links.map((link) => (
         <TreeEdge key={link.id} link={link} />
