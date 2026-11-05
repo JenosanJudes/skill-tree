@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { makeTestTree } from './testTree'
-import { countNodes, findPath, isSafeUrl } from './treeUtils'
+import { countNodes, findPath, isHexColor, isSafeUrl } from './treeUtils'
+
+describe('isHexColor', () => {
+  it('godtager #rrggbb med store og små bogstaver', () => {
+    expect(isHexColor('#00ff88')).toBe(true)
+    expect(isHexColor('#00FF88')).toBe(true)
+  })
+
+  it('afviser andre farveformer', () => {
+    for (const color of ['red', '#0f8', '00ff88', '#00ff88aa', 'rgb(0,0,0)']) {
+      expect(isHexColor(color)).toBe(false)
+    }
+  })
+})
 
 describe('countNodes', () => {
   it('tæller alle noder, stammen medregnet', () => {

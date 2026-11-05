@@ -1,7 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Level } from '../types/skillTree'
-
-const LEVELS = [1, 2, 3, 4, 5] as const
+import { LEVEL_STEPS } from './levels'
 
 type LevelDotsProps = {
   level: Level
@@ -21,7 +20,7 @@ export function LevelDots({ level, color }: LevelDotsProps) {
       aria-label={label}
       style={{ '--branch-color': color } as CSSProperties}
     >
-      {LEVELS.map((n) => (
+      {LEVEL_STEPS.map((n) => (
         <span
           key={n}
           className={n <= level ? 'level-dot-small filled' : 'level-dot-small'}

@@ -141,6 +141,12 @@ describe('SkillTreeView', () => {
     expect(onSelect).toHaveBeenCalledWith('deep')
   })
 
+  it('har knapperne før noderne i Tab-rækkefølgen', () => {
+    const { container } = renderTree()
+    const focusable = container.querySelectorAll('button, [tabindex="0"]')
+    expect(focusable[0]).toHaveTextContent('Vis alt')
+  })
+
   it('kan nås med Tab, fordi noderne har tabIndex', () => {
     renderTree()
     expect(screen.getByRole('button', { name: 'Rod' })).toHaveAttribute(

@@ -52,6 +52,15 @@ export function SkillTreeView({
           : undefined
       }
     >
+      {/* Knapperne står før SVG'en i HTML'en, fordi Tab følger rækkefølgen
+          i HTML'en. Ellers skulle man Tabbe gennem hele træet først.
+          På skærmen står de øverst til venstre (position: absolute). */}
+      <div className="controls">
+        <button type="button" className="reset-zoom" onClick={resetZoom}>
+          Vis alt
+        </button>
+        {controls}
+      </div>
       {/* role="group" og ikke "img": et billede må ikke indeholde knapper,
           så skærmlæsere ville skjule noderne. d3-zoom sluger selv klikket
           efter et træk, så panorering lukker ikke panelet. */}
@@ -79,12 +88,6 @@ export function SkillTreeView({
       {hovered && hovered.id !== selectedId && (
         <HoverCard nodeId={hovered.id} position={hovered.position} />
       )}
-      <div className="controls">
-        <button type="button" className="reset-zoom" onClick={resetZoom}>
-          Vis alt
-        </button>
-        {controls}
-      </div>
     </div>
   )
 }

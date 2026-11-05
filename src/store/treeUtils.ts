@@ -76,6 +76,14 @@ export function isSafeUrl(url: string): boolean {
   }
 }
 
+/**
+ * Farve i formen #rrggbb. Det er den form, en farvevælger
+ * (<input type="color">) både giver og kræver.
+ */
+export function isHexColor(color: string): boolean {
+  return /^#[0-9a-f]{6}$/i.test(color)
+}
+
 /** Returnerer et nyt træ uden noden med `id` (og dens undernoder). */
 export function removeNode(node: SkillNode, id: string): SkillNode {
   let changed = false

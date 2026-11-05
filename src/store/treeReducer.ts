@@ -2,6 +2,7 @@ import type { Level, SkillNode, SkillTree } from '../types/skillTree'
 import {
   findNode,
   getDepth,
+  isHexColor,
   isSafeUrl,
   removeNode,
   updateNode,
@@ -140,7 +141,7 @@ export function treeReducer(state: SkillTree, action: TreeAction): SkillTree {
       // Kun hovedgrene har farve, og kun i formen #rrggbb,
       // som er det, en farvevælger (<input type="color">) giver.
       if (getDepth(state.root, action.id) !== 1) return state
-      if (!/^#[0-9a-f]{6}$/i.test(action.color)) return state
+      if (!isHexColor(action.color)) return state
       const color = action.color.toLowerCase()
       return withRoot(
         state,

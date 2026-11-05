@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { DEFAULT_BRANCH_COLOR, addNode } from '../store/treeReducer'
-import { findPath } from '../store/treeUtils'
+import { findPath, isHexColor } from '../store/treeUtils'
 import { useTree } from '../store/useTree'
 import type { SkillNode } from '../types/skillTree'
 import { EditableText } from './EditableText'
@@ -9,7 +9,6 @@ import { LevelPicker } from './LevelPicker'
 import { LinkEditor } from './LinkEditor'
 
 const KIND_LABEL = ['Stamme', 'Hovedgren'] as const
-const HEX_COLOR = /^#[0-9a-f]{6}$/i
 
 type SidePanelProps = {
   selectedId: string | null
@@ -142,7 +141,7 @@ function NodeEditor({
             // Farvevælgeren kræver #rrggbb; andre formater (fx fra en
             // importeret fil) vises med standardfarven.
             value={
-              node.color && HEX_COLOR.test(node.color)
+              node.color && isHexColor(node.color)
                 ? node.color
                 : DEFAULT_BRANCH_COLOR
             }

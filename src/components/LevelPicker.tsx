@@ -1,7 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Level } from '../types/skillTree'
-
-const LEVELS = [1, 2, 3, 4, 5] as const
+import { LEVEL_STEPS } from './levels'
 
 type LevelPickerProps = {
   level: Level
@@ -20,7 +19,7 @@ export function LevelPicker({ level, color, onChange }: LevelPickerProps) {
         Niveau: {level === 0 ? 'ikke låst op' : `${level} af 5`}
       </legend>
       <div className="level-dots">
-        {LEVELS.map((n) => (
+        {LEVEL_STEPS.map((n) => (
           <button
             key={n}
             type="button"

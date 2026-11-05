@@ -1,6 +1,5 @@
 import type { LayoutLink } from '../layout/computeLayout'
-
-const FALLBACK_COLOR = '#90a4ae'
+import { DEFAULT_BRANCH_COLOR } from '../store/treeReducer'
 
 type TreeEdgeProps = {
   link: LayoutLink
@@ -13,7 +12,7 @@ export function TreeEdge({ link }: TreeEdgeProps) {
       d={link.path}
       data-link-id={link.id}
       fill="none"
-      stroke={link.color ?? FALLBACK_COLOR}
+      stroke={link.color ?? DEFAULT_BRANCH_COLOR}
       strokeOpacity={0.6}
       strokeWidth={2}
     />

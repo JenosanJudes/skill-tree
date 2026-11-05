@@ -30,30 +30,30 @@ Version 1 er færdig, når alle punkter herunder virker.
 
 **Træet**
 
-- [ ] Vise træet med én stamme, hovedgrene og undergrene i flere niveauer
-- [ ] Beregne positioner automatisk, så noder og navne aldrig overlapper
-- [ ] Zoome med scroll og flytte rundt ved at trække
-- [ ] "Vis alt"-knap, der tilpasser hele træet til skærmen
+- [x] Vise træet med én stamme, hovedgrene og undergrene i flere niveauer
+- [x] Beregne positioner automatisk, så noder og navne aldrig overlapper
+- [x] Zoome med scroll og flytte rundt ved at trække
+- [x] "Vis alt"-knap, der tilpasser hele træet til skærmen
 
 **Noder**
 
-- [ ] Hover viser navn, beskrivelse, niveau og noter (kun læsning)
-- [ ] Klik åbner et sidepanel til redigering
-- [ ] Sætte niveau 0-5 ved at klikke på cirkler (undergrene, ikke hovedgrene)
-- [ ] Skrive noter og tilføje links
-- [ ] Tilføje en ny undernode, omdøbe og slette en node
+- [x] Hover viser navn, beskrivelse, niveau og noter (kun læsning)
+- [x] Klik åbner et sidepanel til redigering
+- [x] Sætte niveau 0-5 ved at klikke på cirkler (undergrene, ikke hovedgrene)
+- [x] Skrive noter og tilføje links
+- [x] Tilføje en ny undernode, omdøbe og slette en node
 
 **Data**
 
-- [ ] Gemme alt lokalt i browseren automatisk
-- [ ] Eksportere træet som JSON, med spørgsmål om noter skal med
-- [ ] Importere en JSON-fil og erstatte det nuværende træ
-- [ ] Starte fra en simpel skabelon første gang
+- [x] Gemme alt lokalt i browseren automatisk
+- [x] Eksportere træet som JSON, med spørgsmål om noter skal med
+- [x] Importere en JSON-fil og erstatte det nuværende træ
+- [x] Starte fra en simpel skabelon første gang
 
 **Udseende**
 
-- [ ] Uploade et eget baggrundsbillede, sort som standard
-- [ ] Noder gløder stærkere, jo højere niveau
+- [x] Uploade et eget baggrundsbillede, sort som standard
+- [x] Noder gløder stærkere, jo højere niveau
 
 ## Design og brugeroplevelse
 
@@ -162,8 +162,8 @@ Hver ny samtale starter fra dette dokument og ikke fra idéchatten, så Claude k
 
 **Åbne spørgsmål**
 
-- [ ] Hvad skal startskabelonen indeholde? Forslag: stamme + 4 hovedgrene (AI, Softwareingeniør, Kodesprog, Programmer) med 2-3 noder hver.
-- [ ] Hvor skal appen hostes: GitHub Pages, Vercel eller kun lokalt?
+- [x] Hvad skal startskabelonen indeholde? Forslag: stamme + 4 hovedgrene (AI, Softwareingeniør, Kodesprog, Programmer) med 2-3 noder hver.
+- [x] Hvor skal appen hostes: GitHub Pages, Vercel eller kun lokalt? Besluttet: GitHub Pages.
 - [ ] Hvad gør appen let at opdatere efter en forelæsning, så den bliver brugt?
 
 **Idéer til senere**
