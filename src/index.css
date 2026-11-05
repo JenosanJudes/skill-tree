@@ -29,10 +29,18 @@ body {
   cursor: grabbing;
 }
 
-.reset-zoom {
+/* Knapperne øverst til venstre: "Vis alt" og værktøjslinjen i én række. */
+.controls {
   position: absolute;
   top: 1rem;
   left: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.reset-zoom,
+.toolbar-button {
   padding: 0.4rem 0.8rem;
   border: 1px solid #374151;
   border-radius: 6px;
@@ -42,8 +50,59 @@ body {
   cursor: pointer;
 }
 
-.reset-zoom:hover {
+.reset-zoom:hover,
+.toolbar-button:hover {
   background: #1f2937;
+}
+
+.toolbar {
+  position: relative;
+}
+
+.toolbar-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Lille boks under værktøjslinjen: eksportvalg, bekræftelse eller fejl. */
+.popover {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  width: min(320px, calc(100vw - 2rem));
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  background: rgb(17 24 39 / 0.97);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.5);
+  font-size: 0.9rem;
+}
+
+.popover p {
+  margin: 0;
+}
+
+.popover-hint {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.popover-errors {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #fca5a5;
+  overflow-wrap: anywhere;
+}
+
+.popover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 /* Noder i træet kan klikkes og nås med tastaturet. */

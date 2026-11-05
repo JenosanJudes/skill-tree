@@ -1,4 +1,5 @@
 import { useMemo, useRef } from 'react'
+import type { ReactNode } from 'react'
 import { computeLayout } from '../layout/computeLayout'
 import { useTree } from '../store/useTree'
 import { HoverCard } from './HoverCard'
@@ -11,10 +12,16 @@ type SkillTreeViewProps = {
   selectedId: string | null
   /** Kaldes med nodens id ved klik på en node og med null ved klik ved siden af. */
   onSelect: (id: string | null) => void
+  /** Flere knapper, der vises ved siden af "Vis alt" (fx værktøjslinjen). */
+  controls?: ReactNode
 }
 
 /** Hele træet som én SVG med zoom, panorering og hover-boks. */
-export function SkillTreeView({ selectedId, onSelect }: SkillTreeViewProps) {
+export function SkillTreeView({
+  selectedId,
+  onSelect,
+  controls,
+}: SkillTreeViewProps) {
   const { tree } = useTree()
   const svgRef = useRef<SVGSVGElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -55,9 +62,12 @@ export function SkillTreeView({ selectedId, onSelect }: SkillTreeViewProps) {
       {hovered && hovered.id !== selectedId && (
         <HoverCard nodeId={hovered.id} position={hovered.position} />
       )}
-      <button type="button" className="reset-zoom" onClick={resetZoom}>
-        Vis alt
-      </button>
+      <div className="controls">
+        <button type="button" className="reset-zoom" onClick={resetZoom}>
+          Vis alt
+        </button>
+        {controls}
+      </div>
     </div>
   )
 }

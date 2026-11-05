@@ -227,6 +227,16 @@ describe('treeReducer', () => {
     })
   })
 
+  describe('replaceTree', () => {
+    it('erstatter hele træet', () => {
+      const other = makeTestTree()
+      other.root.name = 'Andet træ'
+      expect(
+        treeReducer(makeTestTree(), { type: 'replaceTree', tree: other }),
+      ).toBe(other)
+    })
+  })
+
   it('ændrer aldrig det gamle træ', () => {
     const state = makeTestTree()
     const snapshot = structuredClone(state)

@@ -23,6 +23,11 @@ export function findPath(node: SkillNode, id: string): SkillNode[] | undefined {
   return undefined
 }
 
+/** Antal noder i træet, stammen medregnet. */
+export function countNodes(node: SkillNode): number {
+  return 1 + node.children.reduce((sum, child) => sum + countNodes(child), 0)
+}
+
 /** Dybden af noden: 0 = stammen, 1 = hovedgren, 2 eller mere = undergren. */
 export function getDepth(
   node: SkillNode,

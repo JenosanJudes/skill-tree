@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { makeTestTree } from './testTree'
-import { findPath, isSafeUrl } from './treeUtils'
+import { countNodes, findPath, isSafeUrl } from './treeUtils'
+
+describe('countNodes', () => {
+  it('tæller alle noder, stammen medregnet', () => {
+    expect(countNodes(makeTestTree().root)).toBe(5)
+  })
+})
 
 describe('findPath', () => {
   it('giver vejen fra stammen til noden', () => {

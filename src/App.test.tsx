@@ -28,4 +28,21 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('group', { name: 'Skill tree' }))
     expect(screen.queryByLabelText('Navn')).not.toBeInTheDocument()
   })
+
+  it('lukker sidepanelet og viser det nye træ efter en import', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(makeTestTree()))
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Blad A' }))
+
+    const imported = makeTestTree()
+    imported.root.name = 'Nyt træ'
+    const file = new File([JSON.stringify(imported)], 'nyt.json')
+    fireEvent.change(screen.getByLabelText('Vælg JSON-fil'), {
+      target: { files: [file] },
+    })
+    fireEvent.click(await screen.findByRole('button', { name: 'Erstat' }))
+
+    expect(screen.queryByLabelText('Navn')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Nyt træ' })).toBeInTheDocument()
+  })
 })

@@ -20,6 +20,8 @@ export type TreeAction =
   | { type: 'addLink'; id: string; title: string; url: string }
   | { type: 'removeLink'; id: string; index: number }
   | { type: 'setColor'; id: string; color: string }
+  /** Hele træet erstattes, fx ved import. Træet skal være valideret først. */
+  | { type: 'replaceTree'; tree: SkillTree }
 
 /** Den del af TreeAction, der har type 'addNode'. */
 export type AddNodeAction = Extract<TreeAction, { type: 'addNode' }>
@@ -147,6 +149,11 @@ export function treeReducer(state: SkillTree, action: TreeAction): SkillTree {
         ),
       )
     }
+
+    case 'replaceTree':
+      // Valideringen sker i parseImport, før handlingen sendes. Reduceren
+      // stoler på det, så den forbliver enkel.
+      return action.tree
   }
 }
 
