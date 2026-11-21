@@ -9,13 +9,23 @@ body {
   margin: 0;
 }
 
-/* Træet fylder hele vinduet. viewBox skalerer det, så alt kan ses. */
+/* Træet fylder hele vinduet. viewBox skalerer det, så alt kan ses.
+   Baggrunden er gennemsigtig, så stjernehimlen bag SVG'en kan ses. */
 .tree-view {
+  position: relative;
   display: block;
   width: 100%;
   height: 100vh;
-  background: #000;
+  /* dvh tager højde for telefonens adresselinje; vh er reserve for ældre
+     browsere. */
+  height: 100dvh;
+  background: transparent;
   cursor: grab;
+  /* Skærm-pixels pr. SVG-enhed. Sættes af SkillTreeView ved hver zoom. */
+  --screen-scale: 1;
+  /* Browseren må ikke selv rulle eller zoome siden, når man trækker eller
+     kniber på træet; det klarer d3-zoom. */
+  touch-action: none;
 }
 
 .tree-view:active {
@@ -24,6 +34,30 @@ body {
 
 .tree-wrapper {
   position: relative;
+  overflow: hidden;
+  /* Næsten sort med et svagt blåt skær i midten, som en nattehimmel. */
+  background: radial-gradient(ellipse at center, #0b1020 0%, #000 70%);
+}
+
+/* Stjernehimlen: to lag, der fylder hele visningen og ligger bag træet. */
+.star-field,
+.stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.stars {
+  animation: twinkle 6s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Eget baggrundsbillede: dækker hele visningen, og SVG'en bliver
@@ -44,8 +78,108 @@ body {
   top: 1rem;
   left: 1rem;
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 0.5rem;
+  /* Rækken selv fanger ikke musen, kun knapperne i den. Ellers kunne man
+     ikke trække i træet lige ved siden af knapperne. */
+  pointer-events: none;
+}
+
+.controls > * {
+  pointer-events: auto;
+}
+
+/* Kraft-måleren står på sin egen række under knapperne (flex-basis: 100 %)
+   og fanger ikke musen, så man kan trække i træet bag den. */
+.controls > .power-meter {
+  flex-basis: 100%;
+  pointer-events: none;
+}
+
+.power-meter {
+  box-sizing: border-box;
+  max-width: 220px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  border: 1px solid rgb(55 65 81 / 0.7);
+  border-radius: 10px;
+  background: rgb(10 14 26 / 0.7);
+  backdrop-filter: blur(6px);
+  font-size: 0.8rem;
+}
+
+.power-meter-top {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.power-meter-rank {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #fde68a;
+}
+
+.power-meter-total {
+  color: #9ca3af;
+}
+
+.power-meter-total strong {
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+/* En bjælke: den ydre er sporet, den indre <span> er fyldet. Bredden sættes
+   i PowerMeter og glider på plads, når den ændres. */
+.power-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.12);
+  overflow: hidden;
+}
+
+.power-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--branch-color, #fde68a);
+  box-shadow: 0 0 8px var(--branch-color, #fde68a);
+  transition: width 400ms ease-out;
+}
+
+.power-bar.total {
+  height: 6px;
+  border-radius: 3px;
+}
+
+.power-meter-branches {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.power-meter-branches li {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.power-meter-branch-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #d1d5db;
 }
 
 .reset-zoom,
@@ -119,9 +253,128 @@ body {
   cursor: pointer;
 }
 
-/* Glorien må ikke gøre det område, der reagerer på musen, større. */
+/* Trykfladen er mindst 44 skærm-pixels bred, uanset zoom. Når der er zoomet
+   ud (lille --screen-scale), bliver den derfor større i SVG-enheder. */
+.node-hit {
+  r: max(22px, 22px / var(--screen-scale));
+}
+
+/* Navnet er mindst 12 skærm-pixels højt, uanset zoom. Den sorte kant bag
+   bogstaverne (paint-order tegner kanten først) gør, at navnet kan læses
+   oven på en forbindelse. */
+.node-label {
+  font-size: max(13px, 12px / var(--screen-scale));
+  paint-order: stroke;
+  stroke: #000;
+  stroke-width: 0.3em;
+  stroke-linejoin: round;
+  transition: opacity 200ms;
+  /* Navnet må ikke fange musen; det gør trykfladen. */
+  pointer-events: none;
+}
+
+/* Zoomet langt ud: kun stamme og hovedgrene har navn. */
+.tree-view[data-detail='far'] .tree-node.skill .node-label {
+  opacity: 0;
+}
+
+/* Glorien må ikke gøre det område, der reagerer på musen, større. Den
+   pulserer: vokser lidt og bliver stærkere, og tilbage igen. Farten og
+   styrken (--glow) sættes pr. node i TreeNode. transform-box gør, at den
+   vokser ud fra sin egen midte og ikke fra SVG'ens hjørne. */
 .node-glow {
   pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: glow-pulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes glow-pulse {
+  from {
+    transform: scale(0.9);
+    opacity: calc(var(--glow) * 0.7);
+  }
+  to {
+    transform: scale(1.15);
+    opacity: var(--glow);
+  }
+}
+
+/* Lys, der løber langs en forbindelse: korte streger med lange mellemrum
+   (6 + 34 = 40 enheder), som flyttes 40 enheder pr. omgang. Så ser det ud,
+   som om de glider fra forælder mod barn uden at hoppe. */
+.edge-flow {
+  pointer-events: none;
+  stroke-dasharray: 6 34;
+  animation: edge-flow var(--flow-duration, 3s) linear infinite;
+}
+
+@keyframes edge-flow {
+  from {
+    stroke-dashoffset: 40;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.level-segment {
+  pointer-events: none;
+}
+
+/* Glimt, når et niveau stiger: en ring, der breder sig og forsvinder, og et
+   hvidt blink i selve cirklen. "forwards" lader dem blive usynlige bagefter. */
+.level-burst,
+.level-flash {
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.level-burst {
+  animation: level-burst 700ms ease-out forwards;
+}
+
+.level-flash {
+  animation: level-flash 500ms ease-out forwards;
+}
+
+@keyframes level-burst {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(4.5);
+    opacity: 0;
+  }
+}
+
+@keyframes level-flash {
+  from {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Rolig udgave for dem, der har bedt systemet om mindre bevægelse. */
+@media (prefers-reduced-motion: reduce) {
+  .stars,
+  .node-glow {
+    animation: none;
+  }
+
+  .edge-flow,
+  .level-burst,
+  .level-flash {
+    display: none;
+  }
+
+  .power-bar span {
+    transition: none;
+  }
 }
 
 .tree-node:focus {
@@ -133,7 +386,8 @@ body {
   outline-offset: 4px;
 }
 
-/* Sidepanelet ligger oven på træet og skubber det ikke. */
+/* Sidepanelet ligger oven på træet og skubber det ikke. Bredden skal passe
+   med SIDE_PANEL_WIDTH i App.tsx. */
 .app {
   position: relative;
 }
@@ -158,6 +412,11 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.side-panel-header-buttons {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .side-panel-kind {
@@ -338,17 +597,17 @@ body {
   margin: 0;
 }
 
-.hover-card-name {
+.summary-name {
   font-weight: 600;
   font-size: 0.95rem;
 }
 
-.hover-card-description {
+.summary-description {
   color: #d1d5db;
 }
 
 /* Noter beholder deres linjeskift. */
-.hover-card-notes {
+.summary-notes {
   padding-top: 0.4rem;
   border-top: 1px solid #374151;
   color: #9ca3af;
@@ -370,4 +629,122 @@ body {
 
 .level-dot-small.filled {
   background: var(--branch-color);
+}
+
+/* Den korte visning i bundarket bruger samme tekster som hover-boksen. */
+.sheet-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sheet-summary p {
+  margin: 0;
+}
+
+.sheet-summary .summary-name {
+  font-size: 1.25rem;
+}
+
+/* ---------- Telefon ----------
+   Bredden skal passe med MOBILE_QUERY i useMediaQuery.ts. */
+@media (max-width: 640px) {
+  /* Knapperne fylder hele bredden og holder sig fri af telefonens hak
+     (env(safe-area-inset-*) er den plads, hakket og hjørnerne tager). */
+  .controls {
+    top: calc(0.5rem + env(safe-area-inset-top));
+    left: calc(0.5rem + env(safe-area-inset-left));
+    right: calc(0.5rem + env(safe-area-inset-right));
+    gap: 0.3rem;
+  }
+
+  /* display: contents fjerner de to kasser om knapperne fra layoutet, så
+     hver knap står direkte i rækken og kan ombrydes for sig. */
+  .toolbar,
+  .toolbar-buttons {
+    display: contents;
+  }
+
+  .power-meter {
+    max-width: 190px;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  /* 44 pixels er den mindste højde, en finger rammer sikkert. */
+  .reset-zoom,
+  .toolbar-button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  /* Boksen under knapperne måles nu fra hele rækken, så den ikke stikker ud
+     over højre kant. Den ligger under første række knapper. */
+  .popover {
+    top: 52px;
+    left: 0;
+    right: 0;
+    width: auto;
+    pointer-events: auto;
+  }
+
+  /* Sidepanelet bliver til et ark i bunden. */
+  .side-panel.sheet {
+    top: auto;
+    left: 0;
+    width: 100%;
+    max-height: 85dvh;
+    padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+    border-left: 0;
+    border-top: 1px solid #374151;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 30px rgb(0 0 0 / 0.6);
+    animation: sheet-up 220ms ease-out;
+  }
+
+  /* Den korte visning. Højden skal passe med SHEET_PEEK_FRACTION i App.tsx. */
+  .side-panel.sheet.peek {
+    max-height: 40dvh;
+  }
+
+  .side-panel.sheet .small-button,
+  .side-panel.sheet .action-button {
+    min-height: 44px;
+    padding: 0.5rem 0.9rem;
+  }
+
+  .side-panel.sheet .level-dots {
+    gap: 0.75rem;
+  }
+
+  .side-panel.sheet .level-dot {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  /* Under 16 pixels zoomer iPhone ind på feltet, når man trykker i det. */
+  .side-panel.sheet .field-input {
+    font-size: 16px;
+  }
+
+  /* Hover-boksen hører til musen; på telefon viser arket det samme. */
+  .hover-card {
+    display: none;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* Ingen glidende ark for dem, der har bedt om mindre bevægelse. */
+@media (prefers-reduced-motion: reduce) {
+  .side-panel.sheet {
+    animation: none;
+  }
 }

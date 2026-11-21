@@ -152,4 +152,3 @@ vite.config.ts.timestamp-*
 .DS_Store
 *.local
 .idea
-CLAUDE.md

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { TreeProvider } from '../store/TreeContext'
 import { makeTestTree } from '../store/testTree'
@@ -246,6 +246,69 @@ describe('SidePanel', () => {
     it('lukker med Escape', () => {
       renderPanel('leaf-a')
       fireEvent.keyDown(screen.getByLabelText('Navn'), { key: 'Escape' })
+      expect(screen.getByTestId('selected')).toHaveTextContent('ingen')
+    })
+  })
+
+  describe('bundark på telefon', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    /** Lader som om skærmen er smal: alle media queries passer. */
+    function pretendMobile() {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: true,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }))
+    }
+
+    it('viser først en kort læsevisning uden tekstfelter', () => {
+      pretendMobile()
+      renderPanel('leaf-b')
+      expect(screen.getByRole('complementary')).toHaveClass('sheet', 'peek')
+      expect(screen.getByText('Blad B')).toBeInTheDocument()
+      expect(screen.queryByLabelText('Navn')).not.toBeInTheDocument()
+    })
+
+    it('kan sætte niveauet direkte fra den korte visning', () => {
+      pretendMobile()
+      renderPanel('leaf-a')
+      fireEvent.click(screen.getByRole('button', { name: 'Niveau 4' }))
+      expect(node('leaf-a')?.level).toBe(4)
+    })
+
+    it('viser ingen niveauvælger for en hovedgren', () => {
+      pretendMobile()
+      renderPanel('branch')
+      expect(
+        screen.queryByRole('button', { name: 'Niveau 1' }),
+      ).not.toBeInTheDocument()
+    })
+
+    it('folder formularen ud med "Redigér" og sammen igen med "Færdig"', () => {
+      pretendMobile()
+      renderPanel('leaf-a')
+      fireEvent.click(screen.getByRole('button', { name: 'Redigér' }))
+      expect(screen.getByLabelText('Navn')).toHaveValue('Blad A')
+      expect(screen.getByRole('complementary')).not.toHaveClass('peek')
+
+      fireEvent.click(screen.getByRole('button', { name: 'Færdig' }))
+      expect(screen.queryByLabelText('Navn')).not.toBeInTheDocument()
+    })
+
+    it('åbner en ny node i redigering, så den kan få et navn', () => {
+      pretendMobile()
+      renderPanel('leaf-a')
+      fireEvent.click(screen.getByRole('button', { name: 'Redigér' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Tilføj undernode' }))
+      expect(screen.getByLabelText('Navn')).toHaveValue('Ny færdighed')
+    })
+
+    it('lukker med krydset', () => {
+      pretendMobile()
+      renderPanel('leaf-a')
+      fireEvent.click(screen.getByRole('button', { name: 'Luk panel' }))
       expect(screen.getByTestId('selected')).toHaveTextContent('ingen')
     })
   })

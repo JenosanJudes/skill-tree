@@ -3,7 +3,7 @@ import type { CardPosition } from '../layout/hoverCardPosition'
 import { DEFAULT_BRANCH_COLOR } from '../store/treeReducer'
 import { findPath } from '../store/treeUtils'
 import { useTree } from '../store/useTree'
-import { LevelDots } from './LevelDots'
+import { NodeSummary } from './NodeSummary'
 
 type HoverCardProps = {
   nodeId: string
@@ -34,12 +34,7 @@ export function HoverCard({ nodeId, position }: HoverCardProps) {
       role="tooltip"
       style={style}
     >
-      <p className="hover-card-name">{node.name}</p>
-      {isSkill && <LevelDots level={node.level ?? 0} color={branchColor} />}
-      {node.description && (
-        <p className="hover-card-description">{node.description}</p>
-      )}
-      {node.notes && <p className="hover-card-notes">{node.notes}</p>}
+      <NodeSummary node={node} levelColor={isSkill ? branchColor : undefined} />
     </div>
   )
 }

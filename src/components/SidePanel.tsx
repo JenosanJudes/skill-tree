@@ -3,12 +3,20 @@ import type { KeyboardEvent } from 'react'
 import { DEFAULT_BRANCH_COLOR, addNode } from '../store/treeReducer'
 import { findPath, isHexColor } from '../store/treeUtils'
 import { useTree } from '../store/useTree'
-import type { SkillNode } from '../types/skillTree'
+import type { Level, SkillNode } from '../types/skillTree'
 import { EditableText } from './EditableText'
+import { vibrate } from './haptics'
 import { LevelPicker } from './LevelPicker'
 import { LinkEditor } from './LinkEditor'
+import { NodeSummary } from './NodeSummary'
+import { MOBILE_QUERY, useMediaQuery } from './useMediaQuery'
 
 const KIND_LABEL = ['Stamme', 'Hovedgren'] as const
+
+/** Stiger niveauet? Så giver telefonen et lille ryk. */
+function isLevelUp(node: SkillNode, level: Level): boolean {
+  return level > (node.level ?? 0)
+}
 
 type SidePanelProps = {
   selectedId: string | null
@@ -16,7 +24,9 @@ type SidePanelProps = {
 }
 
 /**
- * Panel i højre side til at redigere den valgte node. Findes noden ikke
+ * Panel til den valgte node. På en bred skærm står det i højre side og kan
+ * redigere med det samme. På en telefon er det et ark i bunden: først en kort
+ * læsevisning, og "Redigér" folder hele formularen ud. Findes noden ikke
  * (intet valgt, eller den er lige slettet), vises panelet ikke.
  */
 export function SidePanel({ selectedId, onSelect }: SidePanelProps) {
@@ -24,11 +34,17 @@ export function SidePanel({ selectedId, onSelect }: SidePanelProps) {
   // Id på en node, der lige er tilføjet. Dens navnefelt får fokus,
   // så man kan omdøbe den med det samme.
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
+  const isMobile = useMediaQuery(MOBILE_QUERY)
+  // Id på den node, arket er foldet ud for. Vi gemmer id'et og ikke bare
+  // sandt/falsk, så arket folder sig sammen igen, når man vælger en anden.
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   const path = selectedId ? findPath(tree.root, selectedId) : undefined
   if (!path) return null
 
   const node = path[path.length - 1]
+  // En node, man lige har tilføjet, åbner i redigering, så den kan få navn.
+  const editing = !isMobile || editingId === node.id || justAddedId === node.id
 
   function handleAdd(id: string) {
     setJustAddedId(id)
@@ -41,21 +57,91 @@ export function SidePanel({ selectedId, onSelect }: SidePanelProps) {
 
   return (
     <aside
-      className="side-panel"
+      className={`side-panel${isMobile ? ' sheet' : ''}${editing ? '' : ' peek'}`}
       aria-label="Redigér node"
       onKeyDown={handleKeyDown}
     >
       {/* key: et nyt NodeEditor-objekt pr. node, så kladder i felterne
           ikke hænger ved, når man skifter til en anden node. */}
-      <NodeEditor
-        key={node.id}
-        node={node}
-        path={path}
-        autoFocusName={justAddedId === node.id}
-        onAdd={handleAdd}
-        onClose={() => onSelect(null)}
-      />
+      {editing ? (
+        <NodeEditor
+          key={node.id}
+          node={node}
+          path={path}
+          autoFocusName={justAddedId === node.id}
+          onAdd={handleAdd}
+          onClose={() => onSelect(null)}
+          // Kun på telefon: tilbage til den korte visning.
+          onDone={
+            isMobile
+              ? () => {
+                  setEditingId(null)
+                  setJustAddedId(null)
+                }
+              : undefined
+          }
+        />
+      ) : (
+        <NodePeek
+          key={node.id}
+          node={node}
+          path={path}
+          onEdit={() => setEditingId(node.id)}
+          onClose={() => onSelect(null)}
+        />
+      )}
     </aside>
+  )
+}
+
+type NodePeekProps = {
+  node: SkillNode
+  path: SkillNode[]
+  onEdit: () => void
+  onClose: () => void
+}
+
+/**
+ * Den korte visning i bundarket. Niveauet kan sættes direkte herfra, fordi
+ * det er det, man oftest ændrer; alt andet ligger bag "Redigér".
+ */
+function NodePeek({ node, path, onEdit, onClose }: NodePeekProps) {
+  const { dispatch } = useTree()
+  const depth = path.length - 1
+  const branchColor = path[1]?.color ?? DEFAULT_BRANCH_COLOR
+
+  return (
+    <>
+      <header className="side-panel-header">
+        <span className="side-panel-kind">
+          {KIND_LABEL[depth] ?? 'Færdighed'}
+        </span>
+        <button
+          type="button"
+          className="small-button"
+          aria-label="Luk panel"
+          onClick={onClose}
+        >
+          ✕
+        </button>
+      </header>
+      <div className="sheet-summary">
+        <NodeSummary node={node} />
+      </div>
+      {depth >= 2 && (
+        <LevelPicker
+          level={node.level ?? 0}
+          color={branchColor}
+          onChange={(level) => {
+            if (isLevelUp(node, level)) vibrate()
+            dispatch({ type: 'setLevel', id: node.id, level })
+          }}
+        />
+      )}
+      <button type="button" className="action-button" onClick={onEdit}>
+        Redigér
+      </button>
+    </>
   )
 }
 
@@ -65,6 +151,8 @@ type NodeEditorProps = {
   autoFocusName: boolean
   onAdd: (id: string) => void
   onClose: () => void
+  /** Vises som knappen "Færdig", når den er sat (bundarket på telefon). */
+  onDone?: () => void
 }
 
 function NodeEditor({
@@ -73,6 +161,7 @@ function NodeEditor({
   autoFocusName,
   onAdd,
   onClose,
+  onDone,
 }: NodeEditorProps) {
   const { dispatch } = useTree()
   const depth = path.length - 1
@@ -94,14 +183,21 @@ function NodeEditor({
         <span className="side-panel-kind">
           {KIND_LABEL[depth] ?? 'Færdighed'}
         </span>
-        <button
-          type="button"
-          className="small-button"
-          aria-label="Luk panel"
-          onClick={onClose}
-        >
-          ✕
-        </button>
+        <span className="side-panel-header-buttons">
+          {onDone && (
+            <button type="button" className="small-button" onClick={onDone}>
+              Færdig
+            </button>
+          )}
+          <button
+            type="button"
+            className="small-button"
+            aria-label="Luk panel"
+            onClick={onClose}
+          >
+            ✕
+          </button>
+        </span>
       </header>
 
       <EditableText
@@ -125,7 +221,10 @@ function NodeEditor({
         <LevelPicker
           level={node.level ?? 0}
           color={branchColor}
-          onChange={(level) => dispatch({ type: 'setLevel', id, level })}
+          onChange={(level) => {
+            if (isLevelUp(node, level)) vibrate()
+            dispatch({ type: 'setLevel', id, level })
+          }}
         />
       )}
 

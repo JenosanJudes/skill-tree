@@ -7,11 +7,16 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react'
+import { shareTreeImage } from '../store/shareImage'
 import { TreeProvider } from '../store/TreeContext'
 import { makeTestTree } from '../store/testTree'
 import { useTree } from '../store/useTree'
 import type { SkillTree } from '../types/skillTree'
 import { Toolbar } from './Toolbar'
+
+// Selve billedet kræver et rigtigt <canvas>, som jsdom ikke har. Her tjekker
+// vi kun, at knappen kalder funktionen og viser en fejl, hvis den fejler.
+vi.mock('../store/shareImage', () => ({ shareTreeImage: vi.fn() }))
 
 let currentTree: SkillTree
 
@@ -227,6 +232,25 @@ describe('Toolbar', () => {
 
       expect(await screen.findByRole('alert')).toHaveTextContent('leaf-a')
       expect(currentTree.root.name).toBe('Rod')
+    })
+  })
+
+  describe('del som billede', () => {
+    it('laver et billede af det aktuelle træ', async () => {
+      vi.mocked(shareTreeImage).mockResolvedValue()
+      renderToolbar()
+      fireEvent.click(screen.getByRole('button', { name: 'Del' }))
+      await waitFor(() => expect(shareTreeImage).toHaveBeenCalled())
+      expect(vi.mocked(shareTreeImage).mock.calls[0][0].root.name).toBe('Rod')
+    })
+
+    it('viser en fejl, hvis billedet ikke kan laves', async () => {
+      vi.mocked(shareTreeImage).mockRejectedValue(new Error('nej'))
+      renderToolbar()
+      fireEvent.click(screen.getByRole('button', { name: 'Del' }))
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Billedet kunne ikke laves',
+      )
     })
   })
 })

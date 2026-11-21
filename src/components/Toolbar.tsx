@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { ChangeEvent, KeyboardEvent } from 'react'
 import { ALLOWED_TYPES, checkBackgroundFile } from '../store/backgroundStorage'
 import { downloadTree, parseImport } from '../store/fileTransfer'
+import { shareTreeImage } from '../store/shareImage'
 import { countNodes } from '../store/treeUtils'
 import { useTree } from '../store/useTree'
 import type { SkillTree } from '../types/skillTree'
@@ -16,6 +17,7 @@ type Popover =
   | { kind: 'confirm'; tree: SkillTree; fileName: string }
   | { kind: 'error'; errors: string[]; fileName: string }
   | { kind: 'background'; error?: string }
+  | { kind: 'shareError' }
 
 type ToolbarProps = {
   /** Kaldes, når et importeret træ har erstattet det gamle. */
@@ -26,7 +28,7 @@ type ToolbarProps = {
   onBackgroundRemoved: () => Promise<void>
 }
 
-/** Knapperne "Eksportér", "Importér" og "Baggrund" med deres små bokse. */
+/** Knapperne "Eksportér", "Importér", "Baggrund" og "Del" med deres små bokse. */
 export function Toolbar({
   onImported,
   hasBackground,
@@ -74,6 +76,15 @@ export function Toolbar({
   function handleExport(includeNotes: boolean) {
     downloadTree(tree, includeNotes)
     close()
+  }
+
+  async function handleShare() {
+    try {
+      await shareTreeImage(tree)
+      close()
+    } catch {
+      setPopover({ kind: 'shareError' })
+    }
   }
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
@@ -143,7 +154,21 @@ export function Toolbar({
           hidden
           onChange={handleImage}
         />
+        <button type="button" className="toolbar-button" onClick={handleShare}>
+          Del
+        </button>
       </div>
+
+      {popover.kind === 'shareError' && (
+        <div className="popover" role="alert">
+          <p>Billedet kunne ikke laves. Prøv igen.</p>
+          <div className="popover-actions">
+            <button type="button" className="small-button" onClick={close}>
+              Luk
+            </button>
+          </div>
+        </div>
+      )}
 
       {popover.kind === 'background' && (
         <div className="popover" role="dialog" aria-label="Baggrund">

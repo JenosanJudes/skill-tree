@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { makeTestTree } from '../store/testTree'
+import type { SkillNode } from '../types/skillTree'
 import {
-  LEVEL_HEIGHT,
-  NODE_WIDTH,
+  NODE_SPACING,
+  RING_STEP,
+  branchBounds,
   computeLayout,
-  elbowPath,
+  linkPath,
 } from './computeLayout'
 import type { Layout, LayoutNode } from './computeLayout'
 
@@ -12,6 +14,32 @@ function getNode(layout: Layout, id: string): LayoutNode {
   const node = layout.nodes.find((n) => n.id === id)
   if (!node) throw new Error(`Noden ${id} findes ikke i layoutet`)
   return node
+}
+
+/** Afstand fra stammen i midten. */
+function distance(node: LayoutNode): number {
+  return Math.hypot(node.x, node.y)
+}
+
+function between(a: LayoutNode, b: LayoutNode): number {
+  return Math.hypot(a.x - b.x, a.y - b.y)
+}
+
+/** Et træ med mange hovedgrene, der hver har to undergrene. */
+function makeWideTree(branches: number): SkillNode {
+  return {
+    id: 'root',
+    name: 'Rod',
+    children: Array.from({ length: branches }, (_, b) => ({
+      id: `b${b}`,
+      name: `Gren ${b}`,
+      color: '#ff0000',
+      children: [
+        { id: `b${b}-1`, name: 'Et', level: 1 as const, children: [] },
+        { id: `b${b}-2`, name: 'To', level: 2 as const, children: [] },
+      ],
+    })),
+  }
 }
 
 describe('computeLayout', () => {
@@ -23,32 +51,54 @@ describe('computeLayout', () => {
     )
   })
 
-  it('placerer stammen i (0, 0) og alle andre over den', () => {
+  it('placerer stammen i midten, i (0, 0)', () => {
     const root = getNode(layout, 'root')
     expect(root.x).toBe(0)
     expect(root.y).toBe(0)
-    for (const node of layout.nodes.filter((n) => n.id !== 'root')) {
-      expect(node.y).toBeLessThan(0)
+  })
+
+  it('placerer hver dybde på sin egen ring om stammen', () => {
+    const ring = distance(getNode(layout, 'branch'))
+    expect(ring).toBeGreaterThanOrEqual(RING_STEP - 0.1)
+    expect(distance(getNode(layout, 'leaf-a'))).toBeCloseTo(2 * ring, 0)
+    expect(distance(getNode(layout, 'leaf-b'))).toBeCloseTo(2 * ring, 0)
+    expect(distance(getNode(layout, 'deep'))).toBeCloseTo(3 * ring, 0)
+  })
+
+  it('holder naboer på samme ring fra hinanden', () => {
+    expect(
+      between(getNode(layout, 'leaf-a'), getNode(layout, 'leaf-b')),
+    ).toBeGreaterThanOrEqual(NODE_SPACING - 0.1)
+  })
+
+  it('gør cirklen større, når der er mange noder', () => {
+    const wide = computeLayout(makeWideTree(20))
+    const outer = wide.nodes.filter((n) => n.kind === 'skill')
+    for (const a of outer) {
+      for (const b of outer) {
+        if (a.id < b.id) {
+          expect(between(a, b)).toBeGreaterThanOrEqual(NODE_SPACING - 0.1)
+        }
+      }
     }
+    expect(distance(getNode(wide, 'b0'))).toBeGreaterThan(RING_STEP)
   })
 
-  it('placerer hvert barn én række over sin forælder', () => {
-    expect(getNode(layout, 'branch').y).toBe(-LEVEL_HEIGHT)
-    expect(getNode(layout, 'leaf-a').y).toBe(-2 * LEVEL_HEIGHT)
-    expect(getNode(layout, 'leaf-b').y).toBe(-2 * LEVEL_HEIGHT)
-    expect(getNode(layout, 'deep').y).toBe(-3 * LEVEL_HEIGHT)
+  it('spreder hovedgrenene hele vejen rundt om stammen', () => {
+    const wide = computeLayout(makeWideTree(4))
+    const branches = wide.nodes.filter((n) => n.kind === 'branch')
+    // Der er grene både over, under, til venstre og til højre for stammen.
+    expect(Math.min(...branches.map((n) => n.x))).toBeLessThan(0)
+    expect(Math.max(...branches.map((n) => n.x))).toBeGreaterThan(0)
+    expect(Math.min(...branches.map((n) => n.y))).toBeLessThan(0)
+    expect(Math.max(...branches.map((n) => n.y))).toBeGreaterThan(0)
   })
 
-  it('placerer en forælder midt over sine yderste børn', () => {
-    const a = getNode(layout, 'leaf-a')
-    const b = getNode(layout, 'leaf-b')
-    expect(getNode(layout, 'branch').x).toBeCloseTo((a.x + b.x) / 2)
-  })
-
-  it('holder noder på samme række mindst en nodebredde fra hinanden', () => {
-    const a = getNode(layout, 'leaf-a')
-    const b = getNode(layout, 'leaf-b')
-    expect(Math.abs(a.x - b.x)).toBeGreaterThanOrEqual(NODE_WIDTH)
+  it('kan lægge et træ ud, der kun har en stamme', () => {
+    const alone = computeLayout({ id: 'root', name: 'Rod', children: [] })
+    expect(alone.nodes).toHaveLength(1)
+    expect(alone.links).toHaveLength(0)
+    expect(alone.bounds.width).toBeGreaterThan(0)
   })
 
   it('angiver typen: stamme, hovedgren og undergren', () => {
@@ -63,6 +113,12 @@ describe('computeLayout', () => {
     expect(getNode(layout, 'branch').color).toBe('#ff0000')
     expect(getNode(layout, 'leaf-a').color).toBe('#ff0000')
     expect(getNode(layout, 'deep').color).toBe('#ff0000')
+  })
+
+  it('fortæller, hvilken hovedgren en node hører under', () => {
+    expect(getNode(layout, 'root').branchId).toBeUndefined()
+    expect(getNode(layout, 'branch').branchId).toBe('branch')
+    expect(getNode(layout, 'deep').branchId).toBe('branch')
   })
 
   it('tager navn og niveau med fra noden', () => {
@@ -101,10 +157,42 @@ describe('computeLayout', () => {
   })
 })
 
-describe('elbowPath', () => {
-  it('går lodret, vandret og lodret mellem forælder og barn', () => {
-    expect(elbowPath({ x: 0, y: 0 }, { x: 100, y: -120 })).toBe(
-      'M0,0V-60H100V-120',
+describe('branchBounds', () => {
+  const wide = computeLayout(makeWideTree(4))
+
+  it('rummer hovedgrenen og dens undergrene', () => {
+    const bounds = branchBounds(wide, 'b1')
+    expect(bounds).not.toBeNull()
+    if (!bounds) return
+    for (const id of ['b1', 'b1-1', 'b1-2']) {
+      const node = getNode(wide, id)
+      expect(node.x).toBeGreaterThan(bounds.x)
+      expect(node.x).toBeLessThan(bounds.x + bounds.width)
+      expect(node.y).toBeGreaterThan(bounds.y)
+      expect(node.y).toBeLessThan(bounds.y + bounds.height)
+    }
+  })
+
+  it('er mindre end hele træet', () => {
+    const bounds = branchBounds(wide, 'b1')
+    expect(bounds?.width).toBeLessThan(wide.bounds.width)
+  })
+
+  it('giver null for en node, der ikke er en hovedgren', () => {
+    expect(branchBounds(wide, 'root')).toBeNull()
+    expect(branchBounds(wide, 'b1-1')).toBeNull()
+  })
+})
+
+describe('linkPath', () => {
+  it('tegner en lige streg, der stopper lidt før de to cirkler', () => {
+    // Radius 10 og 5 enheders luft i hver ende.
+    expect(linkPath({ x: 0, y: 0 }, { x: 100, y: 0 }, 10, 10)).toBe(
+      'M15,0L85,0',
     )
+  })
+
+  it('tegner hele vejen, når noderne står for tæt', () => {
+    expect(linkPath({ x: 0, y: 0 }, { x: 20, y: 0 }, 10, 10)).toBe('M0,0L20,0')
   })
 })

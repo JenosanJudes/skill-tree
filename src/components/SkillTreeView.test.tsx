@@ -11,6 +11,8 @@ import { HOVER_DELAY_MS } from './useHoverCard'
 import { computeLayout } from '../layout/computeLayout'
 import { TreeProvider } from '../store/TreeContext'
 import { makeTestTree } from '../store/testTree'
+import { useTree } from '../store/useTree'
+import type { Level } from '../types/skillTree'
 import { SkillTreeView } from './SkillTreeView'
 
 function renderTree(
@@ -183,9 +185,11 @@ describe('SkillTreeView', () => {
 
   it('tegner én cirkel pr. node', () => {
     const { container } = renderTree()
-    // Glorierne er også cirkler, men tælles ikke med her.
+    // Glorier og trykflader er også cirkler, men tælles ikke med her.
     expect(
-      container.querySelectorAll('[data-node-id] circle:not(.node-glow)'),
+      container.querySelectorAll(
+        '[data-node-id] > circle:not(.node-glow):not(.node-hit):not(.level-flash)',
+      ),
     ).toHaveLength(5)
   })
 
@@ -228,20 +232,20 @@ describe('SkillTreeView', () => {
       )
     }
 
-    it('viser billedet og skjuler prikkerne', () => {
+    it('viser billedet og skjuler stjernehimlen', () => {
       const { container } = renderWithImage('blob:billede')
       const wrapper = container.querySelector('.tree-wrapper')
       expect(wrapper).toHaveClass('has-image')
       expect(wrapper?.getAttribute('style')).toContain('blob:billede')
-      expect(container.querySelector('pattern')).toBeNull()
+      expect(container.querySelector('.star-field')).toBeNull()
     })
 
-    it('viser prikkerne uden billede', () => {
+    it('viser stjernehimlen uden billede', () => {
       const { container } = renderWithImage(null)
       expect(container.querySelector('.tree-wrapper')).not.toHaveClass(
         'has-image',
       )
-      expect(container.querySelector('pattern')).not.toBeNull()
+      expect(container.querySelector('.star-field')).not.toBeNull()
     })
   })
 
@@ -267,12 +271,122 @@ describe('SkillTreeView', () => {
     )
   })
 
-  it('tegner et prikmønster, der følger træets transform', () => {
+  it('flyver ind på en hovedgren ved klik og hjem igen med "Vis alt"', () => {
+    const onSelect = vi.fn()
+    // To hovedgrene, så den ene gren fylder mindre end hele træet.
+    const tree = makeTestTree()
+    tree.root.children.push({
+      id: 'other',
+      name: 'Anden gren',
+      color: '#00ff00',
+      children: [{ id: 'other-leaf', name: 'Blad C', level: 3, children: [] }],
+    })
+    const { container } = renderTree(null, onSelect, tree)
+    const camera = () =>
+      container.querySelector('svg > g')?.getAttribute('transform')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hovedgren' }))
+    expect(onSelect).toHaveBeenCalledWith('branch')
+    // Grenen er mindre end hele træet, så kameraet har zoomet ind.
+    expect(camera()).not.toBe('translate(0,0) scale(1)')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Vis alt' }))
+    expect(camera()).toBe('translate(0,0) scale(1)')
+  })
+
+  it('flytter ikke kameraet ved klik på en undergren', () => {
     const { container } = renderTree()
-    expect(container.querySelector('pattern')).toHaveAttribute(
-      'patternTransform',
+    fireEvent.click(screen.getByRole('button', { name: 'Blad A' }))
+    expect(container.querySelector('svg > g')).toHaveAttribute(
+      'transform',
       'translate(0,0) scale(1)',
     )
+  })
+
+  it('giver hver node en trykflade, der er større end cirklen', () => {
+    const { container } = renderTree()
+    expect(container.querySelectorAll('.node-hit')).toHaveLength(5)
+  })
+
+  it('viser alle navne, når der ikke er zoomet ud', () => {
+    renderTree()
+    expect(screen.getByRole('group', { name: 'Skill tree' })).toHaveAttribute(
+      'data-detail',
+      'near',
+    )
+  })
+
+  it('tegner en stjernehimmel i to lag bag træet', () => {
+    const { container } = renderTree()
+    const layers = container.querySelectorAll<HTMLElement>('.star-field .stars')
+    expect(layers).toHaveLength(2)
+    expect(layers[0].style.backgroundPosition).toBe('0px 0px')
+  })
+
+  describe('niveauring', () => {
+    const segments = (container: HTMLElement, id: string, filled = '') =>
+      container.querySelectorAll(
+        `[data-node-id="${id}"] .level-segment${filled}`,
+      )
+
+    it('har fem stykker om hver undergren, farvet op til niveauet', () => {
+      const { container } = renderTree()
+      expect(segments(container, 'leaf-b')).toHaveLength(5)
+      expect(segments(container, 'leaf-b', '.filled')).toHaveLength(2)
+      expect(segments(container, 'deep', '.filled')).toHaveLength(0)
+    })
+
+    it('findes ikke på stamme og hovedgrene', () => {
+      const { container } = renderTree()
+      expect(segments(container, 'root')).toHaveLength(0)
+      expect(segments(container, 'branch')).toHaveLength(0)
+    })
+  })
+
+  describe('glimt ved nyt niveau', () => {
+    function LevelButton({ level }: { level: Level }) {
+      const { dispatch } = useTree()
+      return (
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'setLevel', id: 'leaf-b', level })}
+        >
+          Sæt niveau {level}
+        </button>
+      )
+    }
+
+    function renderWithButton(level: Level) {
+      return render(
+        <TreeProvider initialTree={makeTestTree()}>
+          <SkillTreeView selectedId={null} onSelect={vi.fn()} />
+          <LevelButton level={level} />
+        </TreeProvider>,
+      )
+    }
+
+    const burstOf = (container: HTMLElement) =>
+      container.querySelector('[data-node-id="leaf-b"] .level-burst')
+
+    it('vises, når niveauet stiger', () => {
+      const { container } = renderWithButton(4) // Blad B er på niveau 2
+      expect(burstOf(container)).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: 'Sæt niveau 4' }))
+      expect(burstOf(container)).not.toBeNull()
+    })
+
+    it('vises ikke, når niveauet falder', () => {
+      const { container } = renderWithButton(1)
+      fireEvent.click(screen.getByRole('button', { name: 'Sæt niveau 1' }))
+      expect(burstOf(container)).toBeNull()
+    })
+  })
+
+  it('lader lys løbe langs forbindelser til oplåste noder', () => {
+    const { container } = renderTree()
+    // Stamme → hovedgren, Blad A (niveau 1) og Blad B (niveau 2), men ikke
+    // Dyb (niveau 0).
+    expect(container.querySelectorAll('.edge-flow')).toHaveLength(3)
   })
 
   it('sætter viewBox ud fra layoutets rammer', () => {
